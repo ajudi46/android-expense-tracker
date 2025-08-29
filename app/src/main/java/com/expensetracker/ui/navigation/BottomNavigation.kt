@@ -1,5 +1,6 @@
 package com.expensetracker.ui.navigation
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -17,14 +18,15 @@ import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -69,6 +71,7 @@ sealed class BottomNavItem(
 @Composable
 fun ExpenseTrackerBottomNavigation(
     navController: NavController,
+    isVisible: Boolean = true,
     items: List<BottomNavItem> = listOf(
         BottomNavItem.Dashboard,
         BottomNavItem.Accounts,
@@ -78,28 +81,58 @@ fun ExpenseTrackerBottomNavigation(
 ) {
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
     
+    // Animation for hiding/showing with middle collapse/expand
+    val animationSpec = tween<Float>(
+        durationMillis = 300,
+        easing = FastOutSlowInEasing
+    )
+    
+    val scaleX by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        animationSpec = animationSpec,
+        label = "scaleX"
+    )
+    
+    val scaleY by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0.3f,
+        animationSpec = animationSpec,
+        label = "scaleY"
+    )
+    
+    val alpha by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        animationSpec = animationSpec,
+        label = "alpha"
+    )
+    
     // Floating bottom navigation container
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
         contentAlignment = Alignment.Center
     ) {
         Surface(
             modifier = Modifier
+                .graphicsLayer(
+                    scaleX = scaleX,
+                    scaleY = scaleY,
+                    alpha = alpha,
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin.Center
+                )
                 .shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(28.dp),
+                    elevation = 12.dp,
+                    shape = RoundedCornerShape(36.dp), // More rounded
                     clip = false
                 )
-                .clip(RoundedCornerShape(28.dp)),
+                .clip(RoundedCornerShape(36.dp)),
             color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 3.dp
+            tonalElevation = 6.dp
         ) {
             Row(
                 modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    .padding(horizontal = 20.dp, vertical = 8.dp), // Shorter height
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 items.forEach { item ->
@@ -136,11 +169,11 @@ private fun FloatingNavItem(
     
     Box(
         modifier = Modifier
-            .size(56.dp)
+            .size(48.dp) // Slightly smaller for shorter height
             .clip(CircleShape)
             .background(
                 color = if (isSelected) 
-                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
                 else 
                     Color.Transparent
             )
@@ -148,7 +181,7 @@ private fun FloatingNavItem(
                 interactionSource = interactionSource,
                 indication = rememberRipple(
                     bounded = true,
-                    radius = 28.dp,
+                    radius = 24.dp,
                     color = MaterialTheme.colorScheme.primary
                 ),
                 onClick = onClick
@@ -158,7 +191,7 @@ private fun FloatingNavItem(
         Icon(
             imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
             contentDescription = item.title,
-            modifier = Modifier.size(28.dp),
+            modifier = Modifier.size(24.dp), // Slightly smaller icon
             tint = if (isSelected) 
                 MaterialTheme.colorScheme.primary 
             else 

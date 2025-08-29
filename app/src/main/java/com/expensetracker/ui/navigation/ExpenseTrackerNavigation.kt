@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
@@ -21,6 +21,8 @@ import com.expensetracker.ui.screen.RecentTransactionsScreen
 fun ExpenseTrackerNavigation(
     navController: NavHostController = rememberNavController()
 ) {
+    var isBottomNavVisible by remember { mutableStateOf(true) }
+    
     Box(modifier = Modifier.fillMaxSize()) {
         // Main content
         NavHost(
@@ -35,6 +37,9 @@ fun ExpenseTrackerNavigation(
                     },
                     onNavigateToAddTransaction = {
                         navController.navigate(Screen.AddTransaction.route)
+                    },
+                    onScrollDirectionChanged = { visible ->
+                        isBottomNavVisible = visible
                     }
                 )
             }
@@ -43,6 +48,9 @@ fun ExpenseTrackerNavigation(
                 AccountsScreen(
                     onNavigateBack = {
                         navController.popBackStack()
+                    },
+                    onScrollDirectionChanged = { visible ->
+                        isBottomNavVisible = visible
                     }
                 )
             }
@@ -66,7 +74,10 @@ fun ExpenseTrackerNavigation(
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
         ) {
-            ExpenseTrackerBottomNavigation(navController = navController)
+            ExpenseTrackerBottomNavigation(
+                navController = navController,
+                isVisible = isBottomNavVisible
+            )
         }
     }
 }

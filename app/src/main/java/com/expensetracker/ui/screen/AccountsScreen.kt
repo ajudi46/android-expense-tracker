@@ -2,14 +2,17 @@ package com.expensetracker.ui.screen
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -29,13 +32,41 @@ import java.util.*
 @Composable
 fun AccountsScreen(
     onNavigateBack: () -> Unit,
+    onScrollDirectionChanged: (Boolean) -> Unit = {},
     accountViewModel: AccountViewModel = hiltViewModel()
 ) {
     val accounts by accountViewModel.accounts.collectAsStateWithLifecycle(initialValue = emptyList())
     val uiState by accountViewModel.uiState.collectAsStateWithLifecycle()
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.getDefault())
+    val listState = rememberLazyListState()
+    
+    // Track scroll direction
+    LaunchedEffect(listState) {
+        var previousFirstVisibleItemIndex = 0
+        var previousFirstVisibleItemScrollOffset = 0
+        
+        snapshotFlow {
+            listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
+        }.collect { (currentIndex, currentOffset) ->
+            val isScrollingDown = when {
+                currentIndex > previousFirstVisibleItemIndex -> true
+                currentIndex < previousFirstVisibleItemIndex -> false
+                else -> currentOffset > previousFirstVisibleItemScrollOffset
+            }
+            
+            // Only call if there's actual scrolling happening
+            if (currentIndex != previousFirstVisibleItemIndex || 
+                kotlin.math.abs(currentOffset - previousFirstVisibleItemScrollOffset) > 10) {
+                onScrollDirectionChanged(!isScrollingDown) // Show fab when scrolling up
+            }
+            
+            previousFirstVisibleItemIndex = currentIndex
+            previousFirstVisibleItemScrollOffset = currentOffset
+        }
+    }
 
-        LazyColumn(
+    LazyColumn(
+        state = listState,
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp),
