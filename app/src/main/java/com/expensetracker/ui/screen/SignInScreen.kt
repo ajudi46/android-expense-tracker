@@ -183,16 +183,29 @@ fun SignInScreen(
         
         Spacer(modifier = Modifier.height(24.dp))
         
-        // Continue without sign in (optional)
-        TextButton(
+        // Continue without sign in option
+        OutlinedButton(
             onClick = onSignInSuccess,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.onSurface
+            )
         ) {
             Text(
                 text = "Continue without signing in",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.titleMedium
             )
         }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Text(
+            text = "You can use the app locally without cloud backup",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
     }
 }

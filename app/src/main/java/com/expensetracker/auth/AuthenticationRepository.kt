@@ -11,6 +11,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.expensetracker.data.dao.UserDao
 import com.expensetracker.data.model.User
 import com.expensetracker.data.model.UserProfile
+import com.expensetracker.R
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
@@ -24,10 +25,17 @@ class AuthenticationRepository @Inject constructor(
     private val firebaseAuth: FirebaseAuth
 ) {
     
-    private val googleSignInOptions = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-        .requestIdToken("123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com") // Replace with your actual Web Client ID
-        .requestEmail()
-        .build()
+    private val googleSignInOptions = try {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(context.getString(R.string.default_web_client_id))
+            .requestEmail()
+            .build()
+    } catch (e: Exception) {
+        // Fallback for demo/testing when Firebase is not properly configured
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestEmail()
+            .build()
+    }
     
     private val googleSignInClient: GoogleSignInClient = GoogleSignIn.getClient(context, googleSignInOptions)
     

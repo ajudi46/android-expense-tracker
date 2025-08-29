@@ -76,9 +76,10 @@ class AuthViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     errorMessage = when (e.statusCode) {
+                        10 -> "Configuration Error: Please set up Firebase properly. Check FIREBASE_SETUP.md for instructions."
                         12501 -> "Sign in was cancelled"
                         12502 -> "Sign in is in progress"
-                        else -> "Sign in failed: ${e.message}"
+                        else -> "Sign in failed (Error ${e.statusCode}): ${e.message}"
                     }
                 )
             } catch (e: Exception) {
