@@ -32,8 +32,9 @@ fun AddTransactionScreen(
     transactionViewModel: TransactionViewModel = hiltViewModel(),
     accountViewModel: AccountViewModel = hiltViewModel()
 ) {
-    // STEP 1: Add just basic form state and amount input
+    // STEP 2: Add amount AND description fields
     var amount by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
     
     Column(
         modifier = Modifier
@@ -43,19 +44,19 @@ fun AddTransactionScreen(
     ) {
         // Header
         Text(
-            text = "Add Transaction - Step 1",
+            text = "Add Transaction - Step 2",
             style = MaterialTheme.typography.headlineLarge
         )
         
         Text(
-            text = "Testing: Basic amount input only",
+            text = "Testing: Amount + Description fields",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        // STEP 1: Amount Input Only
+        // STEP 1: Amount Input
         OutlinedTextField(
             value = amount,
             onValueChange = { amount = it },
@@ -65,15 +66,46 @@ fun AddTransactionScreen(
             modifier = Modifier.fillMaxWidth()
         )
         
+        // STEP 2: Description Input (Optional)
+        OutlinedTextField(
+            value = description,
+            onValueChange = { description = it },
+            label = { Text("Description (Optional)") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        
         Spacer(modifier = Modifier.weight(1f))
         
-        // Test that amount state works
-        if (amount.isNotEmpty()) {
-            Text(
-                text = "Amount entered: $amount",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary
-            )
+        // Test that both fields work
+        if (amount.isNotEmpty() || description.isNotEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Form State:",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    if (amount.isNotEmpty()) {
+                        Text(
+                            text = "Amount: $amount",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                    if (description.isNotEmpty()) {
+                        Text(
+                            text = "Description: $description",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+            }
         }
         
         Button(
