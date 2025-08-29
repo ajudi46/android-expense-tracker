@@ -14,6 +14,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import java.text.SimpleDateFormat
+import java.util.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.expensetracker.R
@@ -38,6 +40,15 @@ fun AddTransactionScreen(
     var selectedType by remember { mutableStateOf(TransactionType.EXPENSE) }
     var selectedCategory by remember { mutableStateOf("") }
     var selectedAccount by remember { mutableStateOf<Account?>(null) }
+    
+    // Date and Time state
+    var selectedDate by remember { mutableStateOf(System.currentTimeMillis()) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    
+    // Date and Time formatters
+    val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
+    val timeFormatter = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
     
     // Test ViewModel integration
     val accounts by accountViewModel.accounts.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -193,6 +204,44 @@ fun AddTransactionScreen(
             shape = RoundedCornerShape(16.dp)
         )
         
+        // Date and Time Selection
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Date Field
+            OutlinedTextField(
+                value = dateFormatter.format(Date(selectedDate)),
+                onValueChange = { },
+                readOnly = true,
+                label = { Text("Date") },
+                leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+                trailingIcon = {
+                    IconButton(onClick = { showDatePicker = true }) {
+                        Icon(Icons.Default.CalendarToday, contentDescription = "Select Date")
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(16.dp)
+            )
+            
+            // Time Field
+            OutlinedTextField(
+                value = timeFormatter.format(Date(selectedDate)),
+                onValueChange = { },
+                readOnly = true,
+                label = { Text("Time") },
+                leadingIcon = { Icon(Icons.Default.Schedule, contentDescription = null) },
+                trailingIcon = {
+                    IconButton(onClick = { showTimePicker = true }) {
+                        Icon(Icons.Default.Schedule, contentDescription = "Select Time")
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(16.dp)
+            )
+        }
+        
         // Category Selection
         var expandedCategory by remember { mutableStateOf(false) }
         
@@ -308,7 +357,7 @@ fun AddTransactionScreen(
                             category = categoryToUse,
                             fromAccountId = selectedAccount!!.id,
                             toAccountId = null, // For now, no to-account
-                            date = System.currentTimeMillis()
+                            date = selectedDate
                         )
                         onNavigateBack()
                     }
@@ -324,6 +373,85 @@ fun AddTransactionScreen(
                 Text("Save")
             }
         }
+    }
+    
+    // Date Picker Dialog
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate)
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { dateMillis ->
+                            // Preserve the time part of the existing date
+                            val calendar = Calendar.getInstance()
+                            calendar.timeInMillis = selectedDate
+                            val hour = calendar.get(Calendar.HOUR_OF_DAY)
+                            val minute = calendar.get(Calendar.MINUTE)
+                            
+                            // Set new date but keep existing time
+                            calendar.timeInMillis = dateMillis
+                            calendar.set(Calendar.HOUR_OF_DAY, hour)
+                            calendar.set(Calendar.MINUTE, minute)
+                            
+                            selectedDate = calendar.timeInMillis
+                        }
+                        showDatePicker = false
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+    
+    // Time Picker Dialog
+    if (showTimePicker) {
+        val calendar = Calendar.getInstance()
+        calendar.timeInMillis = selectedDate
+        val timePickerState = rememberTimePickerState(
+            initialHour = calendar.get(Calendar.HOUR_OF_DAY),
+            initialMinute = calendar.get(Calendar.MINUTE)
+        )
+        
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            title = { Text("Select Time") },
+            text = {
+                TimePicker(state = timePickerState)
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        // Preserve the date part and update only time
+                        val timeCalendar = Calendar.getInstance()
+                        timeCalendar.timeInMillis = selectedDate
+                        timeCalendar.set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                        timeCalendar.set(Calendar.MINUTE, timePickerState.minute)
+                        timeCalendar.set(Calendar.SECOND, 0)
+                        timeCalendar.set(Calendar.MILLISECOND, 0)
+                        
+                        selectedDate = timeCalendar.timeInMillis
+                        showTimePicker = false
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
