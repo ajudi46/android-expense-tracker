@@ -79,23 +79,26 @@ fun AddTransactionScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Transaction Type Selection
+            // Transaction Type Selection - M3 Expressive design
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+                ),
+                shape = RoundedCornerShape(20.dp), // More rounded for M3 Expressive
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(24.dp) // Increased padding
                 ) {
                     Text(
                         text = "Transaction Type",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleLarge, // Larger heading
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -327,6 +330,7 @@ fun TransactionTypeChip(
         TransactionType.TRANSFER -> stringResource(R.string.transfer)
     }
 
+    // M3 Expressive: Enhanced chip design with better visual feedback
     FilterChip(
         selected = isSelected,
         onClick = { onClick(type) },
@@ -334,21 +338,36 @@ fun TransactionTypeChip(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp) // Additional padding for better touch targets
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(20.dp) // Larger icon
                 )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(text)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.labelLarge, // Better typography
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium
+                )
             }
         },
-        modifier = modifier,
+        modifier = modifier.height(56.dp), // Increased height for better accessibility
         colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = color.copy(alpha = 0.2f),
-            selectedLabelColor = color
-        )
+            selectedContainerColor = color.copy(alpha = 0.16f), // M3 Expressive alpha
+            selectedLabelColor = color,
+            selectedLeadingIconColor = color,
+            containerColor = MaterialTheme.colorScheme.surface,
+            labelColor = MaterialTheme.colorScheme.onSurface
+        ),
+        border = if (isSelected) 
+            FilterChipDefaults.filterChipBorder(
+                borderColor = color,
+                selectedBorderColor = color,
+                borderWidth = 2.dp
+            ) else FilterChipDefaults.filterChipBorder()
     )
 }

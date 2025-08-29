@@ -76,20 +76,22 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // Total Balance Card
+            // Total Balance Card - M3 Expressive prominent display
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer
                     ),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(24.dp), // Larger radius for M3 Expressive
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .padding(32.dp), // More generous padding
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
                             text = stringResource(R.string.total_balance),
@@ -98,9 +100,15 @@ fun DashboardScreen(
                         )
                         Text(
                             text = currencyFormatter.format(totalBalance ?: 0.0),
-                            style = MaterialTheme.typography.headlineLarge,
+                            style = MaterialTheme.typography.displayMedium, // Larger display for prominence
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        // Add subtle secondary info
+                        Text(
+                            text = "Across ${accounts.size} accounts",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                         )
                     }
                 }
@@ -194,25 +202,31 @@ fun QuickActionCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         ),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(20.dp), // More rounded for M3 Expressive
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 8.dp, // Enhanced pressed state
+            hoveredElevation = 4.dp
+        )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(20.dp), // Increased padding for better touch targets
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(32.dp) // Larger icon for better visibility
             )
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = title,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
+                style = MaterialTheme.typography.labelLarge, // Larger text for better readability
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                maxLines = 2
             )
         }
     }
@@ -234,6 +248,12 @@ fun TransactionItem(
         TransactionType.INCOME -> incomeColor
         TransactionType.TRANSFER -> transferColor
     }
+    
+    val containerColor = when (transaction.type) {
+        TransactionType.EXPENSE -> expenseContainer
+        TransactionType.INCOME -> incomeContainer
+        TransactionType.TRANSFER -> transferContainer
+    }
 
     val amountText = when (transaction.type) {
         TransactionType.EXPENSE -> "-${currencyFormatter.format(transaction.amount)}"
@@ -248,28 +268,41 @@ fun TransactionItem(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = RoundedCornerShape(16.dp) // More rounded for M3 Expressive
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(20.dp), // Increased padding for better touch targets
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconColor,
-                modifier = Modifier.size(24.dp)
-            )
+            // M3 Expressive: Icon container with background color
+            Card(
+                modifier = Modifier.size(48.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = containerColor
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp)
+                )
+            }
             
             Spacer(modifier = Modifier.width(16.dp))
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = transaction.description,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
+                    style = MaterialTheme.typography.titleMedium, // Improved hierarchy
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = transaction.category,
@@ -279,16 +312,18 @@ fun TransactionItem(
                 Text(
                     text = dateFormatter.format(Date(transaction.createdAt)),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )
             }
             
-            Text(
-                text = amountText,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = iconColor
-            )
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = amountText,
+                    style = MaterialTheme.typography.titleLarge, // More prominent amount
+                    fontWeight = FontWeight.Bold,
+                    color = iconColor
+                )
+            }
         }
     }
 }

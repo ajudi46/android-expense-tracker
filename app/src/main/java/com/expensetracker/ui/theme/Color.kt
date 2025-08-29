@@ -2,17 +2,22 @@ package com.expensetracker.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Material 3 Expressive Theme Colors
+// Material 3 Expressive Theme Colors - Optimized for financial app
+// Based on M3 Expressive guidelines: https://m3.material.io/blog/building-with-m3-expressive
+
+// Primary palette - Financial trust and security (Deep purple-blue)
 val primaryLight = Color(0xFF6750A4)
 val onPrimaryLight = Color(0xFFFFFFFF)
 val primaryContainerLight = Color(0xFFE9DDFF)
 val onPrimaryContainerLight = Color(0xFF22005D)
 
+// Secondary palette - Supporting actions and information
 val secondaryLight = Color(0xFF625B71)
 val onSecondaryLight = Color(0xFFFFFFFF)
 val secondaryContainerLight = Color(0xFFE8DEF8)
 val onSecondaryContainerLight = Color(0xFF1E192B)
 
+// Tertiary palette - Accent and highlights
 val tertiaryLight = Color(0xFF7D5260)
 val onTertiaryLight = Color(0xFFFFFFFF)
 val tertiaryContainerLight = Color(0xFFFFD8E4)
@@ -64,7 +69,25 @@ val onSurfaceVariantDark = Color(0xFFCAC4D0)
 val outlineDark = Color(0xFF938F99)
 val outlineVariantDark = Color(0xFF49454F)
 
-// Expense tracker specific colors
-val incomeColor = Color(0xFF4CAF50)
-val expenseColor = Color(0xFFF44336)
-val transferColor = Color(0xFF2196F3)
+// M3 Expressive Financial Semantic Colors
+// Green tones for positive financial impact (income)
+val incomeColor = Color(0xFF1B5E20)
+val incomeColorLight = Color(0xFF4CAF50)
+val incomeContainer = Color(0xFFE8F5E8)
+
+// Red tones for negative financial impact (expense)
+val expenseColor = Color(0xFFD32F2F)
+val expenseColorLight = Color(0xFFF44336)
+val expenseContainer = Color(0xFFFFEBEE)
+
+// Blue tones for neutral financial movement (transfer)
+val transferColor = Color(0xFF1976D2)
+val transferColorLight = Color(0xFF2196F3)
+val transferContainer = Color(0xFFE3F2FD)
+
+// M3 Expressive Surface variants for enhanced visual hierarchy
+val surfaceBright = Color(0xFFFFFBFF)
+val surfaceDim = Color(0xFFE7E0EC)
+val surfaceContainer = Color(0xFFF3EDF7)
+val surfaceContainerHigh = Color(0xFFECE6F0)
+val surfaceContainerHighest = Color(0xFFE6E0E9)
