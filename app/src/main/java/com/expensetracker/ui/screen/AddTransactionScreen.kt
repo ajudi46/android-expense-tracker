@@ -55,11 +55,12 @@ fun AddTransactionScreen(
             .padding(start = 16.dp, end = 16.dp, top = 56.dp, bottom = 100.dp), // Better padding for status bar and nav
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header with better styling
+        // Header
         Text(
             text = "Add Transaction",
             style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(vertical = 8.dp)
         )
         
         // STEP 1: Amount Input
@@ -228,98 +229,6 @@ fun AddTransactionScreen(
         }
         
         Spacer(modifier = Modifier.weight(1f))
-        
-        // STEP 4: Test ViewModel integration
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
-            )
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "ViewModel Test:",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-                Text(
-                    text = "Accounts loaded: ${accounts.size}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-                if (accounts.isNotEmpty()) {
-                    accounts.take(3).forEach { account ->
-                        Text(
-                            text = "• ${account.name}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                    if (accounts.size > 3) {
-                        Text(
-                            text = "... and ${accounts.size - 3} more",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                } else {
-                    Text(
-                        text = "No accounts found",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
-            }
-        }
-        
-        // Form state display
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Form State:",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Text(
-                    text = "Type: ${selectedType.name}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                if (selectedCategory.isNotEmpty()) {
-                    Text(
-                        text = "Category: $selectedCategory",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-                if (selectedAccount != null) {
-                    Text(
-                        text = "Account: ${selectedAccount?.name}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-                if (amount.isNotEmpty()) {
-                    Text(
-                        text = "Amount: $amount",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-                if (description.isNotEmpty()) {
-                    Text(
-                        text = "Description: $description",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-        }
         
         // STEP 7: Save Transaction with full validation
         Row(
