@@ -32,11 +32,12 @@ fun AddTransactionScreen(
     transactionViewModel: TransactionViewModel = hiltViewModel(),
     accountViewModel: AccountViewModel = hiltViewModel()
 ) {
-    // STEP 5: Add simple dropdown
+    // STEP 6: Add account dropdown with ViewModel data
     var amount by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf(TransactionType.EXPENSE) }
     var selectedCategory by remember { mutableStateOf("") }
+    var selectedAccount by remember { mutableStateOf<Account?>(null) }
     
     // Test ViewModel integration
     val accounts by accountViewModel.accounts.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -52,12 +53,12 @@ fun AddTransactionScreen(
     ) {
         // Header
         Text(
-            text = "Add Transaction - Step 5",
+            text = "Add Transaction - Step 6",
             style = MaterialTheme.typography.headlineLarge
         )
         
         Text(
-            text = "Testing: Form + ViewModel + Simple Dropdown",
+            text = "Testing: Form + ViewModel + Dynamic Account Dropdown",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -184,6 +185,49 @@ fun AddTransactionScreen(
             }
         }
         
+        // STEP 6: Account dropdown with ViewModel data
+        var expandedAccount by remember { mutableStateOf(false) }
+        
+        ExposedDropdownMenuBox(
+            expanded = expandedAccount,
+            onExpandedChange = { expandedAccount = !expandedAccount }
+        ) {
+            OutlinedTextField(
+                value = selectedAccount?.name ?: "",
+                onValueChange = { },
+                readOnly = true,
+                label = { Text("Account (Dynamic Data)") },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedAccount)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+            
+            ExposedDropdownMenu(
+                expanded = expandedAccount,
+                onDismissRequest = { expandedAccount = false }
+            ) {
+                if (accounts.isEmpty()) {
+                    DropdownMenuItem(
+                        text = { Text("No accounts available") },
+                        onClick = { expandedAccount = false }
+                    )
+                } else {
+                    accounts.forEach { account ->
+                        DropdownMenuItem(
+                            text = { Text(account.name) },
+                            onClick = {
+                                selectedAccount = account
+                                expandedAccount = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+        
         Spacer(modifier = Modifier.weight(1f))
         
         // STEP 4: Test ViewModel integration
@@ -250,6 +294,13 @@ fun AddTransactionScreen(
                 if (selectedCategory.isNotEmpty()) {
                     Text(
                         text = "Category: $selectedCategory",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+                if (selectedAccount != null) {
+                    Text(
+                        text = "Account: ${selectedAccount?.name}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
