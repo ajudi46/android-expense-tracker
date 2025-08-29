@@ -198,9 +198,7 @@ fun ProfileScreen(
                         onClick = {
                             if (!isSyncing) {
                                 isSyncing = true
-                                authViewModel.performInitialSync()
-                                // Reset syncing state after a delay (in real app, this would be managed by ViewModel)
-                                // For now, we'll reset it after 2 seconds
+                                authViewModel.forceFullSync()
                             }
                         },
                         enabled = authState.isSignedIn && !isSyncing,

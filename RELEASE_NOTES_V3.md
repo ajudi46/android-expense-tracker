@@ -225,3 +225,122 @@ Version 3.0 establishes the foundation for advanced features:
 **📅 Release Date**: December 2024  
 **🏷️ Version**: 3.0.0  
 **📦 Build**: Production Ready
+
+## 🔥 **Adding Release SHA-1 to Firebase Console**
+
+### **Step 1: Open Firebase Console**
+
+1. **Go to**: https://console.firebase.google.com/project/logmoney-bb14e/settings/general
+2. **Sign in** with your Google account (the one used for this Firebase project)
+
+### **Step 2: Navigate to App Settings**
+
+1. **Scroll down** to "Your apps" section
+2. **Click on the Android app** with package name `com.expensetracker`
+3. You should see something like this:
+
+```
+📱 Android app
+   Package name: com.expensetracker
+   App ID: 1:476900064653:android:02a98aac2c2161d19a91c4
+   
+   SHA certificate fingerprints
+   SHA-1: 7004e619352272441af500762f92824797570914  [Currently registered]
+```
+
+### **Step 3: Add New SHA-1 Fingerprint**
+
+1. **Click "Add fingerprint"** button (should be near the existing SHA-1)
+2. **Paste this exact SHA-1**:
+   ```
+   0E:B6:6A:87:EB:D5:05:38:B8:03:62:35:C6:DA:EE:86:F9:60:0B:B2
+   ```
+3. **Click "Save"**
+
+### **Step 4: Download Updated Configuration**
+
+1. **Scroll to the top** of your Android app section
+2. **Click "google-services.json"** to download the updated file
+3. **Save it** to your Downloads folder
+
+### **Step 5: Replace Configuration File**
+
+**In your project:**
+
+1. **Navigate to**: `/Users/ajinkya.pingale/Documents/Custom Full Stack Projects/Android App/app/`
+2. **Replace** the existing `google-services.json` with the new one you downloaded
+3. **Or use terminal**:
+   ```bash
+   cd "/Users/ajinkya.pingale/Documents/Custom Full Stack Projects/Android App/app/"
+   # Move your downloaded file here and replace the existing one
+   cp ~/Downloads/google-services.json ./google-services.json
+   ```
+
+### **Step 6: Clean Build**
+
+```bash
+<code_block_to_apply_changes_from>
+```
+
+## 🖼️ **Visual Guide**
+
+When you're in Firebase Console, you should see:
+
+```
+🔥 Firebase Console > Project Settings
+
+Your apps
+┌─────────────────────────────────────────────────────────────┐
+│ 📱 Android                                                   │
+│ com.expensetracker                                          │
+│                                                             │
+│ SHA certificate fingerprints                               │
+│ 70:04:E6:19:35:22:72:44:1A:F5:00:76:2F:92:82:47:97:57:09:14│ ← Existing
+│ [+ Add fingerprint]  ← Click this                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**After clicking "Add fingerprint":**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Add a fingerprint                                           │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ 0E:B6:6A:87:EB:D5:05:38:B8:03:62:35:C6:DA:EE:86:F9:60:0B│ │ ← Paste here
+│ └─────────────────────────────────────────────────────────┘ │
+│ [Cancel] [Save]  ← Click Save                               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## 🚨 **Important Notes**
+
+1. **Copy the SHA-1 exactly** (including colons):
+   ```
+   0E:B6:6A:87:EB:D5:05:38:B8:03:62:35:C6:DA:EE:86:F9:60:0B:B2
+   ```
+
+2. **Don't remove the existing SHA-1** - you want both:
+   - Existing: `7004e619352272441af500762f92824797570914` (debug builds)
+   - New: `0E:B6:6A:87:EB:D5:05:38:B8:03:62:35:C6:DA:EE:86:F9:60:0B:B2` (release builds)
+
+3. **Download the new google-services.json** - this is crucial!
+
+4. **Replace the file** in your project and rebuild
+
+## ✅ **Verification**
+
+After completing these steps:
+
+1. **Build a signed APK**:
+   ```bash
+   ./gradlew assembleRelease
+   ```
+
+2. **Install and test**:
+   ```bash
+   adb install app/build/outputs/apk/release/app-release.apk
+   ```
+
+3. **Open the app** and try signing in - it should work without authentication errors!
+
+Would you like me to help you with any specific step, or do you need help locating any of these elements in the Firebase Console?

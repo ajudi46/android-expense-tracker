@@ -11,6 +11,7 @@ import com.google.android.gms.common.api.ApiException
 import com.expensetracker.auth.AuthenticationRepository
 import com.expensetracker.cloud.CloudSyncRepository
 import com.expensetracker.data.model.UserProfile
+import com.expensetracker.data.model.Transaction
 import com.expensetracker.data.preference.UserPreferenceManager
 import com.expensetracker.data.repository.ExpenseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -167,11 +168,8 @@ class AuthViewModel @Inject constructor(
                     localBudgets = localBudgets
                 )
                 
-                // Then, try to restore any additional data from cloud
-                cloudSyncRepository.syncAccountsFromCloud()
-                cloudSyncRepository.syncTransactionsFromCloud()
-                cloudSyncRepository.syncCategoriesFromCloud()
-                cloudSyncRepository.syncBudgetsFromCloud()
+                // Then, restore data from cloud and merge with local
+                restoreAndMergeCloudData()
                 
                 _uiState.value = _uiState.value.copy(
                     isSyncing = false,
@@ -192,6 +190,39 @@ class AuthViewModel @Inject constructor(
         performInitialSync()
     }
     
+    fun forceFullSync() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSyncing = true)
+            
+            try {
+                // Force upload all local data to cloud
+                val localAccounts = expenseRepository.getAllAccounts().firstOrNull() ?: emptyList()
+                val localTransactions = expenseRepository.getAllTransactions().firstOrNull() ?: emptyList()
+                
+                cloudSyncRepository.performFullSync(
+                    localAccounts = localAccounts,
+                    localTransactions = localTransactions
+                )
+                
+                // Then download and merge cloud data
+                restoreAndMergeCloudData()
+                
+                _uiState.value = _uiState.value.copy(
+                    isSyncing = false,
+                    errorMessage = null
+                )
+                
+                Log.d("ExpenseTracker", "Force sync completed successfully")
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isSyncing = false,
+                    errorMessage = "Sync failed: ${e.message}"
+                )
+                Log.e("ExpenseTracker", "Force sync failed: ${e.message}")
+            }
+        }
+    }
+    
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
     }
@@ -205,6 +236,101 @@ class AuthViewModel @Inject constructor(
         // Used when user logs out - they should see login again
         userPreferenceManager.setHasSeenLogin(false)
         userPreferenceManager.setHasSkippedLogin(false)
+    }
+    
+    private suspend fun restoreAndMergeCloudData() {
+        try {
+            // Get cloud data
+            val cloudAccounts = cloudSyncRepository.syncAccountsFromCloud()
+            val cloudTransactions = cloudSyncRepository.syncTransactionsFromCloud()
+            
+            // Get current local data
+            val localAccounts = expenseRepository.getAllAccounts().firstOrNull() ?: emptyList()
+            val localTransactions = expenseRepository.getAllTransactions().firstOrNull() ?: emptyList()
+            
+            // Merge accounts
+            if (cloudAccounts.isSuccess) {
+                val accountsToAdd = cloudAccounts.getOrNull() ?: emptyList()
+                accountsToAdd.forEach { cloudAccount ->
+                    // Check if account already exists locally (by name, since IDs might differ)
+                    val existsLocally = localAccounts.any { it.name == cloudAccount.name }
+                    if (!existsLocally) {
+                        // Add cloud account to local database
+                        expenseRepository.insertAccount(cloudAccount.copy(id = 0)) // Let DB assign new ID
+                        Log.d("ExpenseTracker", "Restored account from cloud: ${cloudAccount.name}")
+                    }
+                }
+            }
+            
+            // Merge transactions
+            if (cloudTransactions.isSuccess) {
+                val transactionsToAdd = cloudTransactions.getOrNull() ?: emptyList()
+                val localTransactionTimes = localTransactions.map { it.createdAt }.toSet()
+                
+                transactionsToAdd.forEach { cloudTransaction ->
+                    // Check if transaction already exists locally (by timestamp + amount + description)
+                    val existsLocally = localTransactions.any { 
+                        it.createdAt == cloudTransaction.createdAt && 
+                        it.amount == cloudTransaction.amount && 
+                        it.description == cloudTransaction.description
+                    }
+                    
+                    if (!existsLocally) {
+                        // Map account IDs (cloud account IDs might be different than local)
+                        val mappedTransaction = mapCloudTransactionToLocal(cloudTransaction)
+                        if (mappedTransaction != null) {
+                            expenseRepository.insertTransaction(mappedTransaction.copy(id = 0)) // Let DB assign new ID
+                            Log.d("ExpenseTracker", "Restored transaction from cloud: ${cloudTransaction.description}")
+                        }
+                    }
+                }
+            }
+            
+        } catch (e: Exception) {
+            Log.e("ExpenseTracker", "Error restoring cloud data: ${e.message}")
+        }
+    }
+    
+    private suspend fun mapCloudTransactionToLocal(cloudTransaction: Transaction): Transaction? {
+        try {
+            // Get current local accounts to map IDs
+            val localAccounts = expenseRepository.getAllAccounts().firstOrNull() ?: emptyList()
+            
+            if (localAccounts.isEmpty()) {
+                Log.w("ExpenseTracker", "No local accounts available to map cloud transaction")
+                return null
+            }
+            
+            // Try to find matching account by ID first, then by name/type
+            var fromAccount = localAccounts.find { it.id == cloudTransaction.fromAccountId }
+            if (fromAccount == null) {
+                // If no exact ID match, use first available account
+                fromAccount = localAccounts.firstOrNull()
+                Log.d("ExpenseTracker", "Mapped cloud transaction to different account: ${fromAccount?.name}")
+            }
+            
+            var toAccount: com.expensetracker.data.model.Account? = null
+            if (cloudTransaction.toAccountId != null) {
+                toAccount = localAccounts.find { it.id == cloudTransaction.toAccountId }
+                if (toAccount == null && localAccounts.size > 1) {
+                    // Use second account if available, otherwise same account
+                    toAccount = localAccounts.getOrNull(1) ?: fromAccount
+                }
+            }
+            
+            return if (fromAccount != null) {
+                cloudTransaction.copy(
+                    id = 0, // Let database assign new ID
+                    fromAccountId = fromAccount.id,
+                    toAccountId = toAccount?.id
+                )
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("ExpenseTracker", "Error mapping cloud transaction: ${e.message}")
+            return null
+        }
     }
     
     private fun logDeviceInfo() {
