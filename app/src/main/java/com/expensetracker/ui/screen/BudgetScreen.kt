@@ -43,11 +43,14 @@ fun BudgetScreen(
     val budgets by budgetViewModel.getBudgetsForMonth(currentMonth, currentYear).collectAsStateWithLifecycle(initialValue = emptyList())
     
     var showAddBudgetDialog by remember { mutableStateOf(false) }
+    var isRecalculating by remember { mutableStateOf(false) }
     
     val monthNames = listOf(
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     )
+    
+
 
     Column(
         modifier = Modifier
@@ -190,6 +193,38 @@ fun BudgetScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        // Loading Indicator
+        if (isRecalculating) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "Calculating budget from transactions...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
         // Budget List
         if (budgets.isEmpty()) {
             Card(
@@ -231,8 +266,7 @@ fun BudgetScreen(
                     BudgetItem(
                         budget = budget,
                         currencyFormatter = currencyFormatter,
-                        onDeleteBudget = { budgetViewModel.deleteBudget(it) },
-                        onTestSpending = { budgetViewModel.testUpdateBudgetSpending(it.category, it.month, it.year, it.currentSpent + 25.0) }
+                        onDeleteBudget = { budgetViewModel.deleteBudget(it) }
                     )
                 }
             }
@@ -244,7 +278,11 @@ fun BudgetScreen(
         AddBudgetDialog(
             onDismiss = { showAddBudgetDialog = false },
             onBudgetAdded = { category, amount ->
-                budgetViewModel.addBudgetForMonth(category, amount, currentMonth, currentYear)
+                isRecalculating = true
+                budgetViewModel.addBudgetForMonth(category, amount, currentMonth, currentYear) {
+                    // Callback when budget calculation is complete
+                    isRecalculating = false
+                }
                 showAddBudgetDialog = false
             }
         )
@@ -255,8 +293,7 @@ fun BudgetScreen(
 fun BudgetItem(
     budget: Budget,
     currencyFormatter: NumberFormat,
-    onDeleteBudget: (Budget) -> Unit,
-    onTestSpending: (Budget) -> Unit
+    onDeleteBudget: (Budget) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -299,13 +336,7 @@ fun BudgetItem(
                         )
                     }
                     
-                    // Test button for debugging progress bar
-                    OutlinedButton(
-                        onClick = { onTestSpending(budget) },
-                        modifier = Modifier.padding(start = 8.dp)
-                    ) {
-                        Text("Test +$25")
-                    }
+
                 }
             }
             

@@ -22,19 +22,9 @@ class BudgetViewModel @Inject constructor(
     fun addBudget(category: String, limitAmount: Double) {
         viewModelScope.launch {
             val calendar = Calendar.getInstance()
-            val budget = Budget(
-                category = category,
-                limitAmount = limitAmount,
-                currentSpent = 0.0,
-                month = calendar.get(Calendar.MONTH) + 1, // Calendar.MONTH is 0-based
-                year = calendar.get(Calendar.YEAR)
-            )
-            repository.insertBudget(budget)
-        }
-    }
-
-    fun addBudgetForMonth(category: String, limitAmount: Double, month: Int, year: Int) {
-        viewModelScope.launch {
+            val month = calendar.get(Calendar.MONTH) + 1 // Calendar.MONTH is 0-based
+            val year = calendar.get(Calendar.YEAR)
+            
             val budget = Budget(
                 category = category,
                 limitAmount = limitAmount,
@@ -43,6 +33,33 @@ class BudgetViewModel @Inject constructor(
                 year = year
             )
             repository.insertBudget(budget)
+            
+            // Automatically calculate spending from existing transactions
+            repository.recalculateBudgetFromTransactions(category, month, year)
+        }
+    }
+
+    fun addBudgetForMonth(category: String, limitAmount: Double, month: Int, year: Int, onComplete: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            try {
+                val budget = Budget(
+                    category = category,
+                    limitAmount = limitAmount,
+                    currentSpent = 0.0,
+                    month = month,
+                    year = year
+                )
+                repository.insertBudget(budget)
+                
+                // Automatically calculate spending from existing transactions
+                repository.recalculateBudgetFromTransactions(category, month, year)
+                
+                // Notify completion
+                onComplete?.invoke()
+            } catch (e: Exception) {
+                println("🚨 ERROR adding budget: ${e.message}")
+                onComplete?.invoke()
+            }
         }
     }
 
@@ -58,12 +75,7 @@ class BudgetViewModel @Inject constructor(
         }
     }
 
-    // Debug function to manually update budget spending for testing
-    fun testUpdateBudgetSpending(category: String, month: Int, year: Int, spentAmount: Double) {
-        viewModelScope.launch {
-            repository.updateBudgetSpent(category, month, year, spentAmount)
-        }
-    }
+
 
     fun updateBudgetSpent(category: String, newAmount: Double) {
         viewModelScope.launch {

@@ -37,6 +37,9 @@ class ExpenseRepository @Inject constructor(
     fun getTransactionsForMonth(month: Int, year: String): Flow<List<Transaction>> = 
         transactionDao.getTransactionsForMonth(month, year)
     
+    suspend fun getTotalSpentForCategoryAndMonth(category: String, month: Int, year: String): Double =
+        transactionDao.getTotalSpentForCategoryAndMonth(category, month, year) ?: 0.0
+    
     suspend fun insertTransaction(transaction: Transaction): Long {
         val transactionId = transactionDao.insertTransaction(transaction)
         
@@ -74,10 +77,9 @@ class ExpenseRepository @Inject constructor(
             // Check if budget exists for this category in this month
             val existingBudget = getBudgetForCategory(transaction.category, month, year)
             if (existingBudget != null) {
-                // Simply add the new transaction amount to current spent
-                val newSpentAmount = existingBudget.currentSpent + transaction.amount
-                println("🔍 DEBUG: Budget found! Current: ${existingBudget.currentSpent}, New: $newSpentAmount")
-                updateBudgetSpent(transaction.category, month, year, newSpentAmount)
+                // Recalculate total from ALL transactions (not just add to existing)
+                recalculateBudgetFromTransactions(transaction.category, month, year)
+                println("🔍 DEBUG: Budget found and recalculated from all transactions")
             } else {
                 println("🔍 DEBUG: NO BUDGET FOUND for category '${transaction.category}' in $month/$year")
             }
@@ -129,5 +131,30 @@ class ExpenseRepository @Inject constructor(
     
     suspend fun updateBudgetSpent(category: String, month: Int, year: Int, newAmount: Double) {
         budgetDao.updateBudgetSpent(category, month, year, newAmount)
+    }
+    
+    // Calculate total spending from all existing transactions for a specific category and month
+    suspend fun calculateTotalSpentFromTransactions(category: String, month: Int, year: Int): Double {
+        // Use direct database query instead of Flow collection for immediate result
+        val totalSpent = transactionDao.getTotalSpentForCategoryAndMonth(category, month, year.toString()) ?: 0.0
+        println("🔍 DEBUG: Direct DB query for $category ($month/$year): Total spent = $totalSpent")
+        return totalSpent
+    }
+    
+    // Recalculate and update budget spending from all existing transactions
+    suspend fun recalculateBudgetFromTransactions(category: String, month: Int, year: Int) {
+        val totalSpent = calculateTotalSpentFromTransactions(category, month, year)
+        updateBudgetSpent(category, month, year, totalSpent)
+        println("🔍 DEBUG: Recalculated budget for $category ($month/$year): Total spent = $totalSpent")
+    }
+    
+    // Recalculate ALL budgets from existing transactions
+    suspend fun recalculateAllBudgetsFromTransactions() {
+        val allBudgets = budgetDao.getAllBudgets()
+        allBudgets.collect { budgetList ->
+            budgetList.forEach { budget ->
+                recalculateBudgetFromTransactions(budget.category, budget.month, budget.year)
+            }
+        }
     }
 }

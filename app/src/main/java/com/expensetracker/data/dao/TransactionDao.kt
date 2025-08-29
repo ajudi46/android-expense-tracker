@@ -43,4 +43,13 @@ interface TransactionDao {
         ORDER BY createdAt DESC
     """)
     fun getTransactionsForCategoryAndMonth(category: String, month: Int, year: String): Flow<List<Transaction>>
+    
+    @Query("""
+        SELECT SUM(amount) FROM transactions 
+        WHERE category = :category
+        AND type = 'EXPENSE'
+        AND strftime('%m', datetime(createdAt / 1000, 'unixepoch')) = printf('%02d', :month)
+        AND strftime('%Y', datetime(createdAt / 1000, 'unixepoch')) = :year
+    """)
+    suspend fun getTotalSpentForCategoryAndMonth(category: String, month: Int, year: String): Double?
 }
