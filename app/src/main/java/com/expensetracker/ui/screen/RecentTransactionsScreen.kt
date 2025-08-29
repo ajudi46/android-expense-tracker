@@ -237,16 +237,24 @@ fun TransactionItem(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = transaction.description.ifEmpty { "Transaction" },
+                    text = transaction.category,
                     style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 
-                Text(
-                    text = transaction.category,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                // Only show description if user actually added one (not empty and not generic transaction type text)
+                if (transaction.description.isNotEmpty() && 
+                    !transaction.description.contains("transaction", ignoreCase = true) &&
+                    !transaction.description.equals("income", ignoreCase = true) &&
+                    !transaction.description.equals("expense", ignoreCase = true) &&
+                    !transaction.description.equals("transfer", ignoreCase = true)) {
+                    Text(
+                        text = transaction.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 
                 Text(
                     text = dateFormatter.format(java.util.Date(transaction.createdAt)),

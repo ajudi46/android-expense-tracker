@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -13,12 +14,15 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.SwapHoriz
+import coil.compose.AsyncImage
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -35,6 +39,7 @@ import com.expensetracker.ui.theme.transferColor
 import com.expensetracker.ui.theme.transferContainer
 import com.expensetracker.ui.component.MiniPlayerStyleProgressBar
 import com.expensetracker.ui.viewmodel.AccountViewModel
+import com.expensetracker.ui.viewmodel.AuthViewModel
 import com.expensetracker.ui.viewmodel.TransactionViewModel
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -48,11 +53,13 @@ fun DashboardScreen(
     onNavigateToProfile: () -> Unit,
     onScrollDirectionChanged: (Boolean) -> Unit = {},
     accountViewModel: AccountViewModel = hiltViewModel(),
-    transactionViewModel: TransactionViewModel = hiltViewModel()
+    transactionViewModel: TransactionViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val totalBalance by accountViewModel.totalBalance.collectAsStateWithLifecycle(initialValue = 0.0)
     val accounts by accountViewModel.accounts.collectAsStateWithLifecycle(initialValue = emptyList())
     val recentTransactions by transactionViewModel.recentTransactions.collectAsStateWithLifecycle(initialValue = emptyList())
+    val authState by authViewModel.uiState.collectAsStateWithLifecycle()
 
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.getDefault())
     val listState = rememberLazyListState()
@@ -94,11 +101,23 @@ fun DashboardScreen(
                 },
                 actions = {
                     IconButton(onClick = onNavigateToProfile) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Profile",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        if (!authState.userPhotoUrl.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = authState.userPhotoUrl,
+                                contentDescription = "Profile",
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape),
+                                placeholder = painterResource(android.R.drawable.ic_menu_gallery),
+                                error = painterResource(android.R.drawable.ic_menu_gallery)
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Profile",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -352,16 +371,23 @@ fun TransactionItem(
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = transaction.description,
-                    style = MaterialTheme.typography.titleMedium, // Improved hierarchy
+                    text = transaction.category,
+                    style = MaterialTheme.typography.titleMedium, // Category as main title
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                Text(
-                    text = transaction.category,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                // Only show description if user actually added one (not empty and not generic transaction type text)
+                if (transaction.description.isNotEmpty() && 
+                    !transaction.description.contains("transaction", ignoreCase = true) &&
+                    !transaction.description.equals("income", ignoreCase = true) &&
+                    !transaction.description.equals("expense", ignoreCase = true) &&
+                    !transaction.description.equals("transfer", ignoreCase = true)) {
+                    Text(
+                        text = transaction.description,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 Text(
                     text = dateFormatter.format(Date(transaction.createdAt)),
                     style = MaterialTheme.typography.bodySmall,

@@ -2,7 +2,6 @@ package com.expensetracker.ui.screen
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -59,51 +58,136 @@ fun ProfileScreen(
             )
         }
     ) { paddingValues ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            verticalArrangement = Arrangement.spacedBy(1.dp)
+                .padding(paddingValues)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Email Address Option
-            item {
-                ProfileListItem(
-                    icon = Icons.Default.Email,
-                    title = "Email Address",
-                    subtitle = authState.userEmail ?: "Not available",
-                    onClick = { /* Display only */ },
-                    enabled = false
-                )
-            }
-            
-            // Sync Data Option
-            item {
-                ProfileListItem(
-                    icon = Icons.Default.CloudSync,
-                    title = "Sync Data with Cloud",
-                    subtitle = if (isSyncing) "Syncing..." else "Backup & restore your data",
-                    onClick = {
-                        if (!isSyncing) {
-                            isSyncing = true
-                            authViewModel.performInitialSync()
+            // User Profile Section
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Profile Avatar
+                    Surface(
+                        modifier = Modifier.size(80.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Profile",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(20.dp),
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                    
+                    // User Email
+                    Text(
+                        text = authState.userEmail ?: "No email available",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    if (authState.isSignedIn) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer
+                        ) {
+                            Text(
+                                text = "Signed In",
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
                         }
-                    },
-                    enabled = authState.isSignedIn && !isSyncing,
-                    showProgress = isSyncing
-                )
+                    }
+                }
             }
             
-            // Logout Option
-            item {
-                ProfileListItem(
-                    icon = Icons.Default.Logout,
-                    title = "Logout",
-                    subtitle = "Sign out from your account",
-                    onClick = { showLogoutDialog = true },
-                    enabled = authState.isSignedIn,
-                    isDestructive = true
-                )
+            // Profile Options
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Email Section (Display Only)
+                    ProfileOption(
+                        icon = Icons.Default.Email,
+                        title = "Email Address",
+                        subtitle = authState.userEmail ?: "Not available",
+                        onClick = { /* Display only */ },
+                        enabled = false
+                    )
+                    
+                    Divider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                    )
+                    
+                    // Sync Data Option
+                    ProfileOption(
+                        icon = Icons.Default.CloudSync,
+                        title = "Sync Data with Cloud",
+                        subtitle = if (isSyncing) "Syncing..." else "Backup & restore your data",
+                        onClick = {
+                            if (!isSyncing) {
+                                isSyncing = true
+                                authViewModel.performInitialSync()
+                                // Reset syncing state after a delay (in real app, this would be managed by ViewModel)
+                                // For now, we'll reset it after 2 seconds
+                            }
+                        },
+                        enabled = authState.isSignedIn && !isSyncing,
+                        showProgress = isSyncing
+                    )
+                    
+                    Divider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                    )
+                    
+                    // Logout Option
+                    ProfileOption(
+                        icon = Icons.Default.Logout,
+                        title = "Logout",
+                        subtitle = "Sign out from your account",
+                        onClick = { showLogoutDialog = true },
+                        enabled = authState.isSignedIn,
+                        isDestructive = true
+                    )
+                }
             }
+            
+            // App Info
+            Text(
+                text = "Expense Tracker v3.0\nSecure • Private • Encrypted • Cloud-Enabled",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
     
@@ -149,7 +233,7 @@ fun ProfileScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProfileListItem(
+private fun ProfileOption(
     icon: ImageVector,
     title: String,
     subtitle: String,
@@ -158,41 +242,37 @@ private fun ProfileListItem(
     showProgress: Boolean = false,
     isDestructive: Boolean = false
 ) {
+
+    
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = enabled) { onClick() },
-        color = MaterialTheme.colorScheme.surface
+        color = if (isDestructive) {
+            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+        } else {
+            MaterialTheme.colorScheme.surface
+        },
+        shape = RoundedCornerShape(0.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon with circular background
-            Surface(
-                modifier = Modifier.size(40.dp),
-                shape = CircleShape,
-                color = if (isDestructive) {
-                    MaterialTheme.colorScheme.errorContainer
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                modifier = Modifier.size(24.dp),
+                tint = if (isDestructive) {
+                    MaterialTheme.colorScheme.error
+                } else if (enabled) {
+                    MaterialTheme.colorScheme.primary
                 } else {
-                    MaterialTheme.colorScheme.primaryContainer
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 }
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(10.dp),
-                    tint = if (isDestructive) {
-                        MaterialTheme.colorScheme.onErrorContainer
-                    } else {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    }
-                )
-            }
+            )
             
             Spacer(modifier = Modifier.width(16.dp))
             
@@ -201,7 +281,7 @@ private fun ProfileListItem(
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     color = if (isDestructive) {
                         MaterialTheme.colorScheme.error

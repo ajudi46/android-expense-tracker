@@ -20,6 +20,7 @@ data class AuthUiState(
     val isSignedIn: Boolean = false,
     val user: UserProfile? = null,
     val userEmail: String? = null,
+    val userPhotoUrl: String? = null,
     val errorMessage: String? = null,
     val isSyncing: Boolean = false
 )
@@ -47,7 +48,8 @@ class AuthViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(
                     isSignedIn = isSignedIn,
                     user = user,
-                    userEmail = user?.email
+                    userEmail = user?.email,
+                    userPhotoUrl = user?.photoUrl
                 )
             }.collect()
         }

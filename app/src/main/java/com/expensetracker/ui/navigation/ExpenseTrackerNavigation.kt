@@ -31,12 +31,8 @@ fun ExpenseTrackerNavigation(
     var isBottomNavVisible by remember { mutableStateOf(true) }
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
     
-    // Determine start destination based on authentication state
-    val startDestination = if (authState.isSignedIn) {
-        Screen.Dashboard.route
-    } else {
-        Screen.SignIn.route
-    }
+    // Always start with Dashboard - users can use app without signing in
+    val startDestination = Screen.Dashboard.route
     
     Box(modifier = Modifier.fillMaxSize()) {
         // Main content
@@ -49,9 +45,8 @@ fun ExpenseTrackerNavigation(
             composable(Screen.SignIn.route) {
                 SignInScreen(
                     onSignInSuccess = {
-                        navController.navigate(Screen.Dashboard.route) {
-                            popUpTo(Screen.SignIn.route) { inclusive = true }
-                        }
+                        // Just go back to previous screen after sign-in
+                        navController.popBackStack()
                     },
                     authViewModel = authViewModel
                 )
@@ -69,7 +64,8 @@ fun ExpenseTrackerNavigation(
                     },
                     onScrollDirectionChanged = { visible ->
                         isBottomNavVisible = visible
-                    }
+                    },
+                    authViewModel = authViewModel
                 )
             }
 
@@ -121,18 +117,16 @@ fun ExpenseTrackerNavigation(
             }
         }
         
-        // Floating bottom navigation (only show when signed in)
-        if (authState.isSignedIn) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-            ) {
-                ExpenseTrackerBottomNavigation(
-                    navController = navController,
-                    isVisible = isBottomNavVisible
-                )
-            }
+        // Floating bottom navigation (always show - works for both signed in and local users)
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+        ) {
+            ExpenseTrackerBottomNavigation(
+                navController = navController,
+                isVisible = isBottomNavVisible
+            )
         }
     }
 }
