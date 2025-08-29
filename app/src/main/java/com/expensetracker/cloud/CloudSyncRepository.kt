@@ -29,16 +29,26 @@ class CloudSyncRepository @Inject constructor(
         return try {
             val userCollection = getUserCollection("accounts") ?: throw Exception("User not signed in")
             
+            if (accounts.isEmpty()) {
+                return Result.success(Unit)
+            }
+            
+            android.util.Log.d("CloudSync", "Starting batch upload of ${accounts.size} accounts")
+            
+            // Use batch for better performance
+            val batch = firestore.batch()
             accounts.forEach { account ->
                 val encryptedAccount = encryptionManager.encryptAccount(account)
-                firestore.collection(userCollection)
-                    .document(account.id.toString())
-                    .set(encryptedAccount)
-                    .await()
+                val docRef = firestore.collection(userCollection).document(account.id.toString())
+                batch.set(docRef, encryptedAccount)
             }
+            
+            batch.commit().await()
+            android.util.Log.d("CloudSync", "Successfully uploaded ${accounts.size} accounts")
             
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("CloudSync", "Failed to sync accounts to cloud: ${e.message}")
             Result.failure(e)
         }
     }
@@ -74,16 +84,37 @@ class CloudSyncRepository @Inject constructor(
         return try {
             val userCollection = getUserCollection("transactions") ?: throw Exception("User not signed in")
             
-            transactions.forEach { transaction ->
-                val encryptedTransaction = encryptionManager.encryptTransaction(transaction)
-                firestore.collection(userCollection)
-                    .document(transaction.id.toString())
-                    .set(encryptedTransaction)
-                    .await()
+            if (transactions.isEmpty()) {
+                return Result.success(Unit)
             }
+            
+            android.util.Log.d("CloudSync", "Starting batch upload of ${transactions.size} transactions")
+            
+            // For large datasets, split into batches (Firestore batch limit is 500 operations)
+            val batchSize = 450 // Leave some margin
+            val totalBatches = (transactions.size + batchSize - 1) / batchSize
+            
+            for (i in 0 until totalBatches) {
+                val startIndex = i * batchSize
+                val endIndex = minOf(startIndex + batchSize, transactions.size)
+                val batch = firestore.batch()
+                
+                for (j in startIndex until endIndex) {
+                    val transaction = transactions[j]
+                    val encryptedTransaction = encryptionManager.encryptTransaction(transaction)
+                    val docRef = firestore.collection(userCollection).document(transaction.id.toString())
+                    batch.set(docRef, encryptedTransaction)
+                }
+                
+                batch.commit().await()
+                android.util.Log.d("CloudSync", "Uploaded batch ${i + 1}/$totalBatches (${endIndex - startIndex} transactions)")
+            }
+            
+            android.util.Log.d("CloudSync", "Successfully uploaded all ${transactions.size} transactions")
             
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("CloudSync", "Failed to sync transactions to cloud: ${e.message}")
             Result.failure(e)
         }
     }
@@ -217,28 +248,45 @@ class CloudSyncRepository @Inject constructor(
         return try {
             val currentUser = authRepository.getCurrentFirebaseUser() ?: throw Exception("User not signed in")
             
-            // Sync all local data TO cloud
+            android.util.Log.d("CloudSync", "Starting full sync: ${localAccounts.size} accounts, ${localTransactions.size} transactions")
+            
+            // Sync all local data TO cloud with error checking
             if (localAccounts.isNotEmpty()) {
-                syncAccountsToCloud(localAccounts)
+                val accountResult = syncAccountsToCloud(localAccounts)
+                if (accountResult.isFailure) {
+                    throw Exception("Account sync failed: ${accountResult.exceptionOrNull()?.message}")
+                }
             }
             
             if (localTransactions.isNotEmpty()) {
-                syncTransactionsToCloud(localTransactions)
+                val transactionResult = syncTransactionsToCloud(localTransactions)
+                if (transactionResult.isFailure) {
+                    throw Exception("Transaction sync failed: ${transactionResult.exceptionOrNull()?.message}")
+                }
             }
             
             if (localCategories.isNotEmpty()) {
-                syncCategoriesToCloud(localCategories)
+                val categoryResult = syncCategoriesToCloud(localCategories)
+                if (categoryResult.isFailure) {
+                    throw Exception("Category sync failed: ${categoryResult.exceptionOrNull()?.message}")
+                }
             }
             
             if (localBudgets.isNotEmpty()) {
-                syncBudgetsToCloud(localBudgets)
+                val budgetResult = syncBudgetsToCloud(localBudgets)
+                if (budgetResult.isFailure) {
+                    throw Exception("Budget sync failed: ${budgetResult.exceptionOrNull()?.message}")
+                }
             }
             
             // Update last sync timestamp
             authRepository.updateLastSyncTimestamp(currentUser.uid, System.currentTimeMillis())
             
+            android.util.Log.d("CloudSync", "Full sync completed successfully")
+            
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("CloudSync", "Full sync failed: ${e.message}")
             Result.failure(e)
         }
     }

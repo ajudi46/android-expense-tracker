@@ -199,7 +199,7 @@ fun ProfileScreen(
                         icon = Icons.Default.CloudUpload,
                         title = "Backup to Cloud",
                         subtitle = when {
-                            authState.isBackingUp -> "Backing up your data..."
+                            authState.isBackingUp -> "Backing up your data... Please wait"
                             authState.lastBackupTime != null -> "Last backup: ${formatTime(authState.lastBackupTime!!)}"
                             else -> "Upload your data to cloud storage"
                         },

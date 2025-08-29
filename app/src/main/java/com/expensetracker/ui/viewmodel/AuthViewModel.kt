@@ -17,6 +17,8 @@ import com.expensetracker.data.repository.ExpenseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
 import javax.inject.Inject
 
 data class AuthUiState(
@@ -228,19 +230,46 @@ class AuthViewModel @Inject constructor(
     }
     
     fun backupDataToCloud() {
+        if (!_uiState.value.isSignedIn) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = "Please sign in to backup data to cloud"
+            )
+            return
+        }
+        
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isBackingUp = true, errorMessage = null)
             
             try {
+                Log.d("ExpenseTracker", "Starting backup operation...")
+                val startTime = System.currentTimeMillis()
+                
                 // Get all local data
+                Log.d("ExpenseTracker", "Fetching local data...")
                 val localAccounts = expenseRepository.getAllAccounts().firstOrNull() ?: emptyList()
                 val localTransactions = expenseRepository.getAllTransactions().firstOrNull() ?: emptyList()
                 
-                // Upload to cloud
-                val result = cloudSyncRepository.performFullSync(
-                    localAccounts = localAccounts,
-                    localTransactions = localTransactions
-                )
+                Log.d("ExpenseTracker", "Found ${localAccounts.size} accounts, ${localTransactions.size} transactions to backup")
+                
+                if (localAccounts.isEmpty() && localTransactions.isEmpty()) {
+                    _uiState.value = _uiState.value.copy(
+                        isBackingUp = false,
+                        errorMessage = "No data to backup. Add some accounts and transactions first."
+                    )
+                    return@launch
+                }
+                
+                // Upload to cloud with timeout (2 minutes)
+                Log.d("ExpenseTracker", "Starting cloud upload...")
+                val result = withTimeout(120_000) {
+                    cloudSyncRepository.performFullSync(
+                        localAccounts = localAccounts,
+                        localTransactions = localTransactions
+                    )
+                }
+                
+                val endTime = System.currentTimeMillis()
+                val duration = (endTime - startTime) / 1000.0
                 
                 if (result.isSuccess) {
                     _uiState.value = _uiState.value.copy(
@@ -248,19 +277,26 @@ class AuthViewModel @Inject constructor(
                         lastBackupTime = System.currentTimeMillis(),
                         errorMessage = null
                     )
-                    Log.d("ExpenseTracker", "Backup completed successfully - ${localAccounts.size} accounts, ${localTransactions.size} transactions")
+                    Log.d("ExpenseTracker", "Backup completed successfully in ${duration}s - ${localAccounts.size} accounts, ${localTransactions.size} transactions")
                 } else {
                     _uiState.value = _uiState.value.copy(
                         isBackingUp = false,
                         errorMessage = "Backup failed: ${result.exceptionOrNull()?.message}"
                     )
+                    Log.e("ExpenseTracker", "Backup failed after ${duration}s: ${result.exceptionOrNull()?.message}")
                 }
+            } catch (e: TimeoutCancellationException) {
+                _uiState.value = _uiState.value.copy(
+                    isBackingUp = false,
+                    errorMessage = "Backup timed out. Please check your internet connection and try again."
+                )
+                Log.e("ExpenseTracker", "Backup timed out after 2 minutes")
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isBackingUp = false,
                     errorMessage = "Backup failed: ${e.message}"
                 )
-                Log.e("ExpenseTracker", "Backup failed: ${e.message}")
+                Log.e("ExpenseTracker", "Backup failed: ${e.message}", e)
             }
         }
     }
