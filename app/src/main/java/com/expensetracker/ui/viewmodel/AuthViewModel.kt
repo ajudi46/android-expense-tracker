@@ -362,6 +362,44 @@ class AuthViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(errorMessage = null)
     }
     
+    fun clearCloudData() {
+        if (!_uiState.value.isSignedIn) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = "Please sign in to clear cloud data"
+            )
+            return
+        }
+        
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            
+            try {
+                Log.d("ExpenseTracker", "Starting to clear cloud data...")
+                
+                val result = cloudSyncRepository.clearAllCloudData()
+                
+                if (result.isSuccess) {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = null
+                    )
+                    Log.d("ExpenseTracker", "Cloud data cleared successfully")
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = "Failed to clear cloud data: ${result.exceptionOrNull()?.message}"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Failed to clear cloud data: ${e.message}"
+                )
+                Log.e("ExpenseTracker", "Failed to clear cloud data: ${e.message}", e)
+            }
+        }
+    }
+    
     fun skipLogin() {
         userPreferenceManager.setHasSeenLogin(true)
         userPreferenceManager.setHasSkippedLogin(true)

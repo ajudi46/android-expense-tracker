@@ -10,8 +10,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
@@ -62,9 +60,6 @@ fun DashboardScreen(
     val accounts by accountViewModel.accounts.collectAsStateWithLifecycle(initialValue = emptyList())
     val recentTransactions by transactionViewModel.recentTransactions.collectAsStateWithLifecycle(initialValue = emptyList())
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
-    
-    // State for delete confirmation dialog
-    var transactionToDelete by remember { mutableStateOf<Transaction?>(null) }
 
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.getDefault())
     val listState = rememberLazyListState()
@@ -254,13 +249,7 @@ fun DashboardScreen(
                 items(recentTransactions) { transaction ->
                     TransactionItem(
                         transaction = transaction,
-                        currencyFormatter = currencyFormatter,
-                        onEditTransaction = { 
-                            // TODO: Implement edit transaction functionality
-                        },
-                        onDeleteTransaction = { txn ->
-                            transactionToDelete = txn
-                        }
+                        currencyFormatter = currencyFormatter
                     )
                 }
             }
@@ -269,32 +258,6 @@ fun DashboardScreen(
             Spacer(modifier = Modifier.height(16.dp)) // Bottom padding
         }
         }
-    }
-    
-    // Delete confirmation dialog
-    transactionToDelete?.let { transaction ->
-        AlertDialog(
-            onDismissRequest = { transactionToDelete = null },
-            title = { Text("Delete Transaction") },
-            text = { 
-                Text("Are you sure you want to delete this transaction?\n\n${transaction.category}: ${currencyFormatter.format(transaction.amount)}")
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        transactionViewModel.deleteTransaction(transaction)
-                        transactionToDelete = null
-                    }
-                ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { transactionToDelete = null }) {
-                    Text("Cancel")
-                }
-            }
-        )
     }
 }
 
@@ -344,9 +307,7 @@ fun QuickActionCard(
 @Composable
 fun TransactionItem(
     transaction: Transaction,
-    currencyFormatter: NumberFormat,
-    onEditTransaction: ((Transaction) -> Unit)? = null,
-    onDeleteTransaction: ((Transaction) -> Unit)? = null
+    currencyFormatter: NumberFormat
 ) {
     val icon = when (transaction.type) {
         TransactionType.EXPENSE -> Icons.Default.TrendingDown
@@ -441,41 +402,6 @@ fun TransactionItem(
                     fontWeight = FontWeight.Bold,
                     color = iconColor
                 )
-                
-                // Edit and Delete buttons (only show if callbacks are provided)
-                if (onEditTransaction != null || onDeleteTransaction != null) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        if (onEditTransaction != null) {
-                            IconButton(
-                                onClick = { onEditTransaction(transaction) },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Edit,
-                                    contentDescription = "Edit Transaction",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        
-                        if (onDeleteTransaction != null) {
-                            IconButton(
-                                onClick = { onDeleteTransaction(transaction) },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Delete Transaction",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
-                    }
-                }
             }
         }
     }

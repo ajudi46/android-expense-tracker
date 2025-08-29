@@ -82,29 +82,8 @@ class TransactionViewModel @Inject constructor(
 
     fun deleteTransaction(transaction: Transaction) {
         viewModelScope.launch {
-            // First reverse the balance changes before deleting
-            when (transaction.type) {
-                TransactionType.EXPENSE -> {
-                    // Add back the expense amount to the account (reverse the deduction)
-                    repository.updateAccountBalance(transaction.fromAccountId, transaction.amount)
-                }
-                TransactionType.INCOME -> {
-                    // Subtract the income amount from the account (reverse the addition)
-                    repository.updateAccountBalance(transaction.fromAccountId, -transaction.amount)
-                }
-                TransactionType.TRANSFER -> {
-                    transaction.toAccountId?.let { toAccountId ->
-                        // Reverse transfer: add back to from account, subtract from to account
-                        repository.updateAccountBalance(transaction.fromAccountId, transaction.amount)
-                        repository.updateAccountBalance(toAccountId, -transaction.amount)
-                    }
-                }
-            }
-            
-            // Then delete the transaction
             repository.deleteTransaction(transaction)
-            
-            // Note: For cloud sync, we could implement a "deleted" flag instead of actual deletion
+            // Note: For deletion, we could implement a "deleted" flag instead of actual deletion
             // to sync deletions across devices, but for simplicity, we'll just delete locally
         }
     }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Email
@@ -246,6 +247,24 @@ fun ProfileScreen(
                         },
                         enabled = authState.isSignedIn && !authState.isSyncing && !authState.isBackingUp && !authState.isRestoring,
                         showProgress = authState.isSyncing
+                    )
+                    
+                    Divider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                    )
+                    
+                    // Clear Cloud Data Option (for testing)
+                    ProfileOption(
+                        icon = Icons.Default.CloudOff,
+                        title = "Clear Cloud Data",
+                        subtitle = "Delete all data from cloud (for testing)",
+                        onClick = {
+                            authViewModel.clearCloudData()
+                        },
+                        enabled = authState.isSignedIn && !authState.isBackingUp && !authState.isRestoring && !authState.isSyncing && !authState.isLoading,
+                        showProgress = authState.isLoading,
+                        isDestructive = true
                     )
                     
                     Divider(

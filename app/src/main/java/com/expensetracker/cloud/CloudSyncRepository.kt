@@ -290,4 +290,75 @@ class CloudSyncRepository @Inject constructor(
             Result.failure(e)
         }
     }
+    
+    // Clear all cloud data for testing purposes
+    suspend fun clearAllCloudData(): Result<Unit> {
+        return try {
+            val currentUser = authRepository.getCurrentFirebaseUser() ?: throw Exception("User not signed in")
+            
+            android.util.Log.d("CloudSync", "Starting to clear all cloud data for user: ${currentUser.uid}")
+            
+            // Clear accounts
+            val accountsCollection = getUserCollection("accounts")
+            if (accountsCollection != null) {
+                val accountsSnapshot = firestore.collection(accountsCollection).get().await()
+                val accountsBatch = firestore.batch()
+                accountsSnapshot.documents.forEach { doc ->
+                    accountsBatch.delete(doc.reference)
+                }
+                if (accountsSnapshot.documents.isNotEmpty()) {
+                    accountsBatch.commit().await()
+                    android.util.Log.d("CloudSync", "Deleted ${accountsSnapshot.documents.size} accounts")
+                }
+            }
+            
+            // Clear transactions
+            val transactionsCollection = getUserCollection("transactions")
+            if (transactionsCollection != null) {
+                val transactionsSnapshot = firestore.collection(transactionsCollection).get().await()
+                val transactionsBatch = firestore.batch()
+                transactionsSnapshot.documents.forEach { doc ->
+                    transactionsBatch.delete(doc.reference)
+                }
+                if (transactionsSnapshot.documents.isNotEmpty()) {
+                    transactionsBatch.commit().await()
+                    android.util.Log.d("CloudSync", "Deleted ${transactionsSnapshot.documents.size} transactions")
+                }
+            }
+            
+            // Clear categories
+            val categoriesCollection = getUserCollection("categories")
+            if (categoriesCollection != null) {
+                val categoriesSnapshot = firestore.collection(categoriesCollection).get().await()
+                val categoriesBatch = firestore.batch()
+                categoriesSnapshot.documents.forEach { doc ->
+                    categoriesBatch.delete(doc.reference)
+                }
+                if (categoriesSnapshot.documents.isNotEmpty()) {
+                    categoriesBatch.commit().await()
+                    android.util.Log.d("CloudSync", "Deleted ${categoriesSnapshot.documents.size} categories")
+                }
+            }
+            
+            // Clear budgets
+            val budgetsCollection = getUserCollection("budgets")
+            if (budgetsCollection != null) {
+                val budgetsSnapshot = firestore.collection(budgetsCollection).get().await()
+                val budgetsBatch = firestore.batch()
+                budgetsSnapshot.documents.forEach { doc ->
+                    budgetsBatch.delete(doc.reference)
+                }
+                if (budgetsSnapshot.documents.isNotEmpty()) {
+                    budgetsBatch.commit().await()
+                    android.util.Log.d("CloudSync", "Deleted ${budgetsSnapshot.documents.size} budgets")
+                }
+            }
+            
+            android.util.Log.d("CloudSync", "Successfully cleared all cloud data")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("CloudSync", "Failed to clear cloud data: ${e.message}")
+            Result.failure(e)
+        }
+    }
 }
