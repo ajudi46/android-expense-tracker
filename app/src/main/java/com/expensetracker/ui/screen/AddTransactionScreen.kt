@@ -63,72 +63,111 @@ fun AddTransactionScreen(
             modifier = Modifier.padding(vertical = 8.dp)
         )
         
-        // Transaction Type Selection - FIRST PRIORITY
+        // Transaction Type Selection - Segmented Control
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                containerColor = MaterialTheme.colorScheme.surface
             ),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(24.dp),
+            border = androidx.compose.foundation.BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline
+            )
         ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                Text(
-                    text = "Transaction Type",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(0.dp)
+            ) {
+                // Expense Option
+                Card(
+                    onClick = { selectedType = TransactionType.EXPENSE },
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (selectedType == TransactionType.EXPENSE) 
+                            MaterialTheme.colorScheme.primaryContainer 
+                        else Color.Transparent,
+                        contentColor = if (selectedType == TransactionType.EXPENSE) 
+                            MaterialTheme.colorScheme.onPrimaryContainer 
+                        else MaterialTheme.colorScheme.onSurface
+                    ),
+                    shape = RoundedCornerShape(20.dp)
                 ) {
-                    Button(
-                        onClick = { selectedType = TransactionType.EXPENSE },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (selectedType == TransactionType.EXPENSE) 
-                                MaterialTheme.colorScheme.primary 
-                            else MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = if (selectedType == TransactionType.EXPENSE) 
-                                MaterialTheme.colorScheme.onPrimary 
-                            else MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        shape = RoundedCornerShape(12.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text("Expense")
+                        Text(
+                            text = "Expense",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = if (selectedType == TransactionType.EXPENSE) 
+                                FontWeight.SemiBold 
+                            else FontWeight.Normal
+                        )
                     }
-                    
-                    Button(
-                        onClick = { selectedType = TransactionType.INCOME },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (selectedType == TransactionType.INCOME) 
-                                MaterialTheme.colorScheme.primary 
-                            else MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = if (selectedType == TransactionType.INCOME) 
-                                MaterialTheme.colorScheme.onPrimary 
-                            else MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        shape = RoundedCornerShape(12.dp)
+                }
+                
+                // Income Option
+                Card(
+                    onClick = { selectedType = TransactionType.INCOME },
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (selectedType == TransactionType.INCOME) 
+                            MaterialTheme.colorScheme.primaryContainer 
+                        else Color.Transparent,
+                        contentColor = if (selectedType == TransactionType.INCOME) 
+                            MaterialTheme.colorScheme.onPrimaryContainer 
+                        else MaterialTheme.colorScheme.onSurface
+                    ),
+                    shape = RoundedCornerShape(20.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text("Income")
+                        Text(
+                            text = "Income",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = if (selectedType == TransactionType.INCOME) 
+                                FontWeight.SemiBold 
+                            else FontWeight.Normal
+                        )
                     }
-                    
-                    Button(
-                        onClick = { selectedType = TransactionType.TRANSFER },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (selectedType == TransactionType.TRANSFER) 
-                                MaterialTheme.colorScheme.primary 
-                            else MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = if (selectedType == TransactionType.TRANSFER) 
-                                MaterialTheme.colorScheme.onPrimary 
-                            else MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        shape = RoundedCornerShape(12.dp)
+                }
+                
+                // Transfer Option
+                Card(
+                    onClick = { selectedType = TransactionType.TRANSFER },
+                    modifier = Modifier.weight(1f),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (selectedType == TransactionType.TRANSFER) 
+                            MaterialTheme.colorScheme.primaryContainer 
+                        else Color.Transparent,
+                        contentColor = if (selectedType == TransactionType.TRANSFER) 
+                            MaterialTheme.colorScheme.onPrimaryContainer 
+                        else MaterialTheme.colorScheme.onSurface
+                    ),
+                    shape = RoundedCornerShape(20.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text("Transfer")
+                        Text(
+                            text = "Transfer",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = if (selectedType == TransactionType.TRANSFER) 
+                                FontWeight.SemiBold 
+                            else FontWeight.Normal
+                        )
                     }
                 }
             }
@@ -141,7 +180,8 @@ fun AddTransactionScreen(
             label = { Text("Amount") },
             leadingIcon = { Text("$", style = MaterialTheme.typography.titleMedium) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp)
         )
 
         // Description Input
@@ -149,7 +189,8 @@ fun AddTransactionScreen(
             value = description,
             onValueChange = { description = it },
             label = { Text("Description") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp)
         )
         
         // Category Selection
@@ -169,7 +210,8 @@ fun AddTransactionScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor()
+                    .menuAnchor(),
+                shape = RoundedCornerShape(16.dp)
             )
             
             ExposedDropdownMenu(
@@ -205,7 +247,8 @@ fun AddTransactionScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor()
+                    .menuAnchor(),
+                shape = RoundedCornerShape(16.dp)
             )
             
             ExposedDropdownMenu(
