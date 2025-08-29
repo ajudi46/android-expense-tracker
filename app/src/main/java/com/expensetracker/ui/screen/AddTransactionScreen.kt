@@ -32,13 +32,17 @@ fun AddTransactionScreen(
     transactionViewModel: TransactionViewModel = hiltViewModel(),
     accountViewModel: AccountViewModel = hiltViewModel()
 ) {
-    // STEP 4: Add ViewModel integration
+    // STEP 5: Add simple dropdown
     var amount by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf(TransactionType.EXPENSE) }
+    var selectedCategory by remember { mutableStateOf("") }
     
     // Test ViewModel integration
     val accounts by accountViewModel.accounts.collectAsStateWithLifecycle(initialValue = emptyList())
+    
+    // Simple static categories for testing
+    val testCategories = listOf("Food", "Transport", "Shopping", "Bills", "Other")
     
     Column(
         modifier = Modifier
@@ -48,12 +52,12 @@ fun AddTransactionScreen(
     ) {
         // Header
         Text(
-            text = "Add Transaction - Step 4",
+            text = "Add Transaction - Step 5",
             style = MaterialTheme.typography.headlineLarge
         )
         
         Text(
-            text = "Testing: Form + ViewModel Integration",
+            text = "Testing: Form + ViewModel + Simple Dropdown",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -144,6 +148,42 @@ fun AddTransactionScreen(
             }
         }
         
+        // STEP 5: Simple dropdown test
+        var expandedCategory by remember { mutableStateOf(false) }
+        
+        ExposedDropdownMenuBox(
+            expanded = expandedCategory,
+            onExpandedChange = { expandedCategory = !expandedCategory }
+        ) {
+            OutlinedTextField(
+                value = selectedCategory,
+                onValueChange = { },
+                readOnly = true,
+                label = { Text("Category (Test)") },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategory)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+            
+            ExposedDropdownMenu(
+                expanded = expandedCategory,
+                onDismissRequest = { expandedCategory = false }
+            ) {
+                testCategories.forEach { category ->
+                    DropdownMenuItem(
+                        text = { Text(category) },
+                        onClick = {
+                            selectedCategory = category
+                            expandedCategory = false
+                        }
+                    )
+                }
+            }
+        }
+        
         Spacer(modifier = Modifier.weight(1f))
         
         // STEP 4: Test ViewModel integration
@@ -207,6 +247,13 @@ fun AddTransactionScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
+                if (selectedCategory.isNotEmpty()) {
+                    Text(
+                        text = "Category: $selectedCategory",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
                 if (amount.isNotEmpty()) {
                     Text(
                         text = "Amount: $amount",
