@@ -35,43 +35,48 @@ fun AccountsScreen(
     val uiState by accountViewModel.uiState.collectAsStateWithLifecycle()
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.getDefault())
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.accounts)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    accountViewModel.updateUiState(uiState.copy(showAddAccountDialog = true))
-                },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_account))
-            }
-        }
-    ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 100.dp) // Space for floating nav
+    ) {
+        // Header with Add Account button
+        item {
+            Column {
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Accounts",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    
+                    FilledTonalButton(
+                        onClick = {
+                            accountViewModel.updateUiState(uiState.copy(showAddAccountDialog = true))
+                        },
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        )
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Add Account")
+                    }
+                }
                 Spacer(modifier = Modifier.height(8.dp))
             }
+        }
 
             if (accounts.isEmpty()) {
                 item {
@@ -128,10 +133,9 @@ fun AccountsScreen(
             }
 
             item {
-                Spacer(modifier = Modifier.height(80.dp)) // Space for FAB
+                Spacer(modifier = Modifier.height(16.dp)) // Bottom padding
             }
         }
-    }
 
     if (uiState.showAddAccountDialog) {
         AddAccountDialog(

@@ -49,39 +49,29 @@ fun DashboardScreen(
 
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.getDefault())
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(bottom = 100.dp) // Space for floating nav
+    ) {
+        // Header
+        item {
+            Column {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Dashboard",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(vertical = 8.dp)
                 )
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToAddTransaction,
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_transaction))
             }
         }
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-            }
 
-            // Total Balance Card - M3 Expressive prominent display
-            item {
-                Card(
+        // Total Balance Card - M3 Expressive prominent display
+        item {
+            Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -117,8 +107,8 @@ fun DashboardScreen(
                 }
             }
 
-            // Quick Actions
-            item {
+        // Quick Actions
+        item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -138,8 +128,8 @@ fun DashboardScreen(
                 }
             }
 
-            // Recent Transactions Header
-            item {
+        // Recent Transactions Header
+        item {
                 Text(
                     text = stringResource(R.string.recent_transactions),
                     style = MaterialTheme.typography.titleLarge,
@@ -185,9 +175,8 @@ fun DashboardScreen(
                 }
             }
 
-            item {
-                Spacer(modifier = Modifier.height(80.dp)) // Space for FAB
-            }
+        item {
+            Spacer(modifier = Modifier.height(16.dp)) // Bottom padding
         }
     }
 }

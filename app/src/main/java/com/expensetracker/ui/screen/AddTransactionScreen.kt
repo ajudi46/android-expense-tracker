@@ -1,19 +1,20 @@
 package com.expensetracker.ui.screen
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -55,159 +56,86 @@ fun AddTransactionScreen(
         TransactionType.TRANSFER -> emptyList()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.add_transaction)) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp), // Space for floating nav
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Header
+        Text(
+            text = "Add Transaction",
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
+        
+        // Transaction Type Selection - M3 Expressive design
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            shape = RoundedCornerShape(20.dp) // More rounded for M3 Expressive
         ) {
-            // Transaction Type Selection - M3 Expressive design
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                ),
-                shape = RoundedCornerShape(20.dp), // More rounded for M3 Expressive
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            Column(
+                modifier = Modifier.padding(24.dp) // Increased padding for M3 Expressive
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp) // Increased padding
+                Text(
+                    text = "Transaction Type",
+                    style = MaterialTheme.typography.titleLarge, // Larger typography for M3 Expressive
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                        text = "Transaction Type",
-                        style = MaterialTheme.typography.titleLarge, // Larger heading
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    TransactionType.values().forEach { type ->
                         TransactionTypeChip(
-                            type = TransactionType.EXPENSE,
-                            isSelected = selectedType == TransactionType.EXPENSE,
-                            onClick = { selectedType = it },
-                            modifier = Modifier.weight(1f)
-                        )
-                        TransactionTypeChip(
-                            type = TransactionType.INCOME,
-                            isSelected = selectedType == TransactionType.INCOME,
-                            onClick = { selectedType = it },
-                            modifier = Modifier.weight(1f)
-                        )
-                        TransactionTypeChip(
-                            type = TransactionType.TRANSFER,
-                            isSelected = selectedType == TransactionType.TRANSFER,
+                            type = type,
+                            isSelected = selectedType == type,
                             onClick = { selectedType = it },
                             modifier = Modifier.weight(1f)
                         )
                     }
                 }
             }
+        }
 
-            // Amount Input
-            OutlinedTextField(
-                value = amount,
-                onValueChange = { amount = it },
-                label = { Text(stringResource(R.string.amount)) },
-                leadingIcon = {
-                    Icon(Icons.Default.AttachMoney, contentDescription = null)
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
+        // Amount Input
+        OutlinedTextField(
+            value = amount,
+            onValueChange = { amount = it },
+            label = { Text("Amount") },
+            leadingIcon = { Text("$", style = MaterialTheme.typography.titleMedium) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier.fillMaxWidth()
+        )
 
-            // Description Input
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text(stringResource(R.string.description)) },
-                leadingIcon = {
-                    Icon(Icons.Default.Description, contentDescription = null)
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
+        // Description Input
+        OutlinedTextField(
+            value = description,
+            onValueChange = { description = it },
+            label = { Text("Description") },
+            leadingIcon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null) },
+            modifier = Modifier.fillMaxWidth()
+        )
 
-            // Category Selection (not for transfers)
-            if (selectedType != TransactionType.TRANSFER) {
-                ExposedDropdownMenuBox(
-                    expanded = showCategoryDropdown,
-                    onExpandedChange = { showCategoryDropdown = !showCategoryDropdown }
-                ) {
-                    OutlinedTextField(
-                        value = selectedCategory,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text(stringResource(R.string.category)) },
-                        leadingIcon = {
-                            Icon(Icons.Default.Category, contentDescription = null)
-                        },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCategoryDropdown)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor()
-                    )
-                    
-                    ExposedDropdownMenu(
-                        expanded = showCategoryDropdown,
-                        onDismissRequest = { showCategoryDropdown = false }
-                    ) {
-                        categories.forEach { category ->
-                            DropdownMenuItem(
-                                text = { Text(category) },
-                                onClick = {
-                                    selectedCategory = category
-                                    showCategoryDropdown = false
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-
-            // From Account Selection
+        // Category Selection (not shown for transfers)
+        if (selectedType != TransactionType.TRANSFER) {
             ExposedDropdownMenuBox(
-                expanded = showFromAccountDropdown,
-                onExpandedChange = { showFromAccountDropdown = !showFromAccountDropdown }
+                expanded = showCategoryDropdown,
+                onExpandedChange = { showCategoryDropdown = !showCategoryDropdown }
             ) {
                 OutlinedTextField(
-                    value = selectedFromAccount?.name ?: "",
-                    onValueChange = {},
+                    value = selectedCategory,
+                    onValueChange = { },
                     readOnly = true,
-                    label = { 
-                        Text(
-                            if (selectedType == TransactionType.TRANSFER) 
-                                stringResource(R.string.from_account) 
-                            else stringResource(R.string.account)
-                        ) 
-                    },
-                    leadingIcon = {
-                        Icon(Icons.Default.AccountBalanceWallet, contentDescription = null)
-                    },
+                    label = { Text("Category") },
                     trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = showFromAccountDropdown)
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCategoryDropdown)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -215,92 +143,135 @@ fun AddTransactionScreen(
                 )
                 
                 ExposedDropdownMenu(
-                    expanded = showFromAccountDropdown,
-                    onDismissRequest = { showFromAccountDropdown = false }
+                    expanded = showCategoryDropdown,
+                    onDismissRequest = { showCategoryDropdown = false }
                 ) {
-                    accounts.forEach { account ->
+                    categories.forEach { category ->
                         DropdownMenuItem(
-                            text = { Text("${account.name} (${String.format("%.2f", account.balance)})") },
+                            text = { Text(category) },
                             onClick = {
-                                selectedFromAccount = account
-                                showFromAccountDropdown = false
+                                selectedCategory = category
+                                showCategoryDropdown = false
                             }
                         )
                     }
                 }
             }
+        }
 
-            // To Account Selection (only for transfers)
-            if (selectedType == TransactionType.TRANSFER) {
-                ExposedDropdownMenuBox(
-                    expanded = showToAccountDropdown,
-                    onExpandedChange = { showToAccountDropdown = !showToAccountDropdown }
-                ) {
-                    OutlinedTextField(
-                        value = selectedToAccount?.name ?: "",
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text(stringResource(R.string.to_account)) },
-                        leadingIcon = {
-                            Icon(Icons.Default.AccountBalance, contentDescription = null)
-                        },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = showToAccountDropdown)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .menuAnchor()
-                    )
-                    
-                    ExposedDropdownMenu(
-                        expanded = showToAccountDropdown,
-                        onDismissRequest = { showToAccountDropdown = false }
-                    ) {
-                        accounts.filter { it.id != selectedFromAccount?.id }.forEach { account ->
-                            DropdownMenuItem(
-                                text = { Text("${account.name} (${String.format("%.2f", account.balance)})") },
-                                onClick = {
-                                    selectedToAccount = account
-                                    showToAccountDropdown = false
-                                }
-                            )
+        // From Account Selection
+        ExposedDropdownMenuBox(
+            expanded = showFromAccountDropdown,
+            onExpandedChange = { showFromAccountDropdown = !showFromAccountDropdown }
+        ) {
+            OutlinedTextField(
+                value = selectedFromAccount?.name ?: "",
+                onValueChange = { },
+                readOnly = true,
+                label = { 
+                    Text(
+                        if (selectedType == TransactionType.TRANSFER) 
+                            stringResource(R.string.from_account) 
+                        else stringResource(R.string.account)
+                    ) 
+                },
+                leadingIcon = {
+                    Icon(Icons.Default.AccountBalanceWallet, contentDescription = null)
+                },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = showFromAccountDropdown)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+            
+            ExposedDropdownMenu(
+                expanded = showFromAccountDropdown,
+                onDismissRequest = { showFromAccountDropdown = false }
+            ) {
+                accounts.forEach { account ->
+                    DropdownMenuItem(
+                        text = { Text(account.name) },
+                        onClick = {
+                            selectedFromAccount = account
+                            showFromAccountDropdown = false
                         }
+                    )
+                }
+            }
+        }
+
+        // To Account Selection (only for transfers)
+        if (selectedType == TransactionType.TRANSFER) {
+            ExposedDropdownMenuBox(
+                expanded = showToAccountDropdown,
+                onExpandedChange = { showToAccountDropdown = !showToAccountDropdown }
+            ) {
+                OutlinedTextField(
+                    value = selectedToAccount?.name ?: "",
+                    onValueChange = { },
+                    readOnly = true,
+                    label = { Text(stringResource(R.string.to_account)) },
+                    leadingIcon = {
+                        Icon(Icons.Default.AccountBalanceWallet, contentDescription = null)
+                    },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = showToAccountDropdown)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
+                )
+                
+                ExposedDropdownMenu(
+                    expanded = showToAccountDropdown,
+                    onDismissRequest = { showToAccountDropdown = false }
+                ) {
+                    accounts.filter { it.id != selectedFromAccount?.id }.forEach { account ->
+                        DropdownMenuItem(
+                            text = { Text(account.name) },
+                            onClick = {
+                                selectedToAccount = account
+                                showToAccountDropdown = false
+                            }
+                        )
                     }
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.weight(1f))
 
-            // Save Button
-            Button(
-                onClick = {
-                    val amountValue = amount.toDoubleOrNull() ?: 0.0
-                    if (amountValue > 0 && description.isNotBlank() && selectedFromAccount != null) {
-                        val categoryToUse = if (selectedType == TransactionType.TRANSFER) "Transfer" else selectedCategory
-                        
-                        transactionViewModel.addTransaction(
-                            type = selectedType,
-                            amount = amountValue,
-                            description = description,
-                            category = categoryToUse,
-                            fromAccountId = selectedFromAccount!!.id,
-                            toAccountId = selectedToAccount?.id
-                        )
-                        onNavigateBack()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = amount.toDoubleOrNull() != null && 
-                          amount.toDoubleOrNull() ?: 0.0 > 0 && 
-                          description.isNotBlank() && 
-                          selectedFromAccount != null &&
-                          (selectedType == TransactionType.TRANSFER || selectedCategory.isNotBlank()) &&
-                          (selectedType != TransactionType.TRANSFER || selectedToAccount != null)
-            ) {
-                Icon(Icons.Default.Save, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.save))
-            }
+        // Save Button
+        Button(
+            onClick = {
+                val amountValue = amount.toDoubleOrNull() ?: 0.0
+                if (amountValue > 0 && description.isNotBlank() && selectedFromAccount != null) {
+                    val categoryToUse = if (selectedType == TransactionType.TRANSFER) "Transfer" else selectedCategory
+                    
+                    transactionViewModel.addTransaction(
+                        type = selectedType,
+                        amount = amountValue,
+                        description = description,
+                        category = categoryToUse,
+                        fromAccountId = selectedFromAccount!!.id,
+                        toAccountId = selectedToAccount?.id
+                    )
+                    onNavigateBack()
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = amount.toDoubleOrNull() != null && 
+                      amount.toDoubleOrNull() ?: 0.0 > 0 && 
+                      description.isNotBlank() && 
+                      selectedFromAccount != null &&
+                      (selectedType == TransactionType.TRANSFER || selectedCategory.isNotBlank()) &&
+                      (selectedType != TransactionType.TRANSFER || selectedToAccount != null)
+        ) {
+            Icon(Icons.Default.Save, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(stringResource(R.string.save))
         }
     }
 }
@@ -318,44 +289,35 @@ fun TransactionTypeChip(
         TransactionType.TRANSFER -> transferColor
     }
 
-    val icon = when (type) {
-        TransactionType.EXPENSE -> Icons.Default.TrendingDown
-        TransactionType.INCOME -> Icons.Default.TrendingUp
-        TransactionType.TRANSFER -> Icons.Default.SwapHoriz
+    val label = when (type) {
+        TransactionType.EXPENSE -> "Expense"
+        TransactionType.INCOME -> "Income"
+        TransactionType.TRANSFER -> "Transfer"
     }
 
-    val text = when (type) {
-        TransactionType.EXPENSE -> stringResource(R.string.expense)
-        TransactionType.INCOME -> stringResource(R.string.income)
-        TransactionType.TRANSFER -> stringResource(R.string.transfer)
-    }
-
-    // M3 Expressive: Enhanced chip design with better visual feedback
     FilterChip(
         selected = isSelected,
         onClick = { onClick(type) },
-        label = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp) // Additional padding for better touch targets
-            ) {
+        label = { 
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge // M3 Expressive larger label
+            )
+        },
+        modifier = modifier.height(56.dp), // M3 Expressive increased height
+        leadingIcon = if (isSelected) {
+            {
                 Icon(
-                    imageVector = icon,
+                    imageVector = when (type) {
+                        TransactionType.EXPENSE -> Icons.Default.AccountBalanceWallet
+                        TransactionType.INCOME -> Icons.Default.AccountBalanceWallet
+                        TransactionType.TRANSFER -> Icons.Default.AccountBalanceWallet
+                    },
                     contentDescription = null,
-                    modifier = Modifier.size(20.dp) // Larger icon
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.labelLarge, // Better typography
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium
+                    modifier = Modifier.size(20.dp) // M3 Expressive larger icon
                 )
             }
-        },
-        modifier = modifier.height(56.dp), // Increased height for better accessibility
+        } else null,
         colors = FilterChipDefaults.filterChipColors(
             selectedContainerColor = color.copy(alpha = 0.16f), // M3 Expressive alpha
             selectedLabelColor = color,
