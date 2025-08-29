@@ -32,9 +32,10 @@ fun AddTransactionScreen(
     transactionViewModel: TransactionViewModel = hiltViewModel(),
     accountViewModel: AccountViewModel = hiltViewModel()
 ) {
-    // STEP 2: Add amount AND description fields
+    // STEP 3: Add transaction type selection
     var amount by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    var selectedType by remember { mutableStateOf(TransactionType.EXPENSE) }
     
     Column(
         modifier = Modifier
@@ -44,12 +45,12 @@ fun AddTransactionScreen(
     ) {
         // Header
         Text(
-            text = "Add Transaction - Step 2",
+            text = "Add Transaction - Step 3",
             style = MaterialTheme.typography.headlineLarge
         )
         
         Text(
-            text = "Testing: Amount + Description fields",
+            text = "Testing: Amount + Description + Transaction Type",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -74,36 +75,105 @@ fun AddTransactionScreen(
             modifier = Modifier.fillMaxWidth()
         )
         
+        // STEP 3: Transaction Type Selection
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Transaction Type",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = { selectedType = TransactionType.EXPENSE },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selectedType == TransactionType.EXPENSE) 
+                                MaterialTheme.colorScheme.primary 
+                            else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (selectedType == TransactionType.EXPENSE) 
+                                MaterialTheme.colorScheme.onPrimary 
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        Text("Expense")
+                    }
+                    
+                    Button(
+                        onClick = { selectedType = TransactionType.INCOME },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selectedType == TransactionType.INCOME) 
+                                MaterialTheme.colorScheme.primary 
+                            else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (selectedType == TransactionType.INCOME) 
+                                MaterialTheme.colorScheme.onPrimary 
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        Text("Income")
+                    }
+                    
+                    Button(
+                        onClick = { selectedType = TransactionType.TRANSFER },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selectedType == TransactionType.TRANSFER) 
+                                MaterialTheme.colorScheme.primary 
+                            else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (selectedType == TransactionType.TRANSFER) 
+                                MaterialTheme.colorScheme.onPrimary 
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        Text("Transfer")
+                    }
+                }
+            }
+        }
+        
         Spacer(modifier = Modifier.weight(1f))
         
-        // Test that both fields work
-        if (amount.isNotEmpty() || description.isNotEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+        // Test that all form fields work
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Form State:",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Type: ${selectedType.name}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                if (amount.isNotEmpty()) {
                     Text(
-                        text = "Form State:",
-                        style = MaterialTheme.typography.titleSmall,
+                        text = "Amount: $amount",
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
-                    if (amount.isNotEmpty()) {
-                        Text(
-                            text = "Amount: $amount",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                    if (description.isNotEmpty()) {
-                        Text(
-                            text = "Description: $description",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
+                }
+                if (description.isNotEmpty()) {
+                    Text(
+                        text = "Description: $description",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
                 }
             }
         }
