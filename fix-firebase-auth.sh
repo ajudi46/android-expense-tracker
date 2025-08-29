@@ -26,20 +26,38 @@ if [ -f "$DEBUG_KEYSTORE" ]; then
     echo -e "${GREEN}✅ Debug keystore found at: $DEBUG_KEYSTORE${NC}"
     
     echo ""
-    echo -e "${BLUE}2. Getting SHA-1 Fingerprint...${NC}"
-    SHA1=$(keytool -list -v -keystore "$DEBUG_KEYSTORE" -alias androiddebugkey -storepass android -keypass android 2>/dev/null | grep "SHA1:" | sed 's/.*SHA1: //')
+    echo -e "${BLUE}2. Getting SHA-1 Fingerprints...${NC}"
     
-    if [ ! -z "$SHA1" ]; then
-        echo -e "${GREEN}✅ Current SHA-1 Fingerprint: $SHA1${NC}"
+    # Debug keystore SHA-1
+    DEBUG_SHA1=$(keytool -list -v -keystore "$DEBUG_KEYSTORE" -alias androiddebugkey -storepass android -keypass android 2>/dev/null | grep "SHA1:" | sed 's/.*SHA1: //')
+    
+    if [ ! -z "$DEBUG_SHA1" ]; then
+        echo -e "${GREEN}✅ Debug SHA-1 Fingerprint: $DEBUG_SHA1${NC}"
+    else
+        echo -e "${RED}❌ Could not extract debug SHA-1 fingerprint${NC}"
+    fi
+    
+    # Release keystore SHA-1 (if exists)
+    if [ -f "keystore.jks" ]; then
+        echo -e "${BLUE}📱 Found release keystore: keystore.jks${NC}"
+        echo -e "${YELLOW}⚠️  Release keystore requires password. Common aliases: 'key0', 'androidreleasekey', 'release'${NC}"
         echo ""
-        echo -e "${YELLOW}📋 Copy this SHA-1 fingerprint and add it to Firebase Console:${NC}"
-        echo -e "${BLUE}$SHA1${NC}"
+        echo -e "${BLUE}To get release SHA-1, run one of these commands:${NC}"
+        echo "keytool -list -v -keystore keystore.jks -alias key0"
+        echo "keytool -list -v -keystore keystore.jks -alias androidreleasekey"
+        echo "keytool -list -v -keystore keystore.jks -alias release"
+        echo ""
+        echo -e "${YELLOW}💡 Add BOTH debug and release SHA-1 to Firebase Console!${NC}"
+    fi
+    
+    if [ ! -z "$DEBUG_SHA1" ]; then
+        echo ""
+        echo -e "${YELLOW}📋 Debug SHA-1 fingerprint (add to Firebase Console):${NC}"
+        echo -e "${BLUE}$DEBUG_SHA1${NC}"
         echo ""
         echo -e "${YELLOW}🔗 Firebase Console URL:${NC}"
         echo "https://console.firebase.google.com/project/logmoney-bb14e/settings/general"
         echo ""
-    else
-        echo -e "${RED}❌ Could not extract SHA-1 fingerprint${NC}"
     fi
 else
     echo -e "${RED}❌ Debug keystore not found at: $DEBUG_KEYSTORE${NC}"
@@ -60,20 +78,21 @@ if [ -f "app/google-services.json" ]; then
     echo "   Package Name: $PACKAGE_NAME"
     echo "   Configured SHA-1: $CURRENT_SHA1"
     
-    if [ "$SHA1" = "$CURRENT_SHA1" ]; then
-        echo -e "${GREEN}✅ SHA-1 fingerprints match!${NC}"
+    if [ "$DEBUG_SHA1" = "$CURRENT_SHA1" ]; then
+        echo -e "${GREEN}✅ Debug SHA-1 fingerprints match!${NC}"
     else
-        echo -e "${RED}❌ SHA-1 fingerprint mismatch!${NC}"
-        echo -e "${YELLOW}   Your device SHA-1: $SHA1${NC}"
+        echo -e "${RED}❌ Debug SHA-1 fingerprint mismatch!${NC}"
+        echo -e "${YELLOW}   Your debug SHA-1: $DEBUG_SHA1${NC}"
         echo -e "${YELLOW}   Firebase config SHA-1: $CURRENT_SHA1${NC}"
         echo ""
         echo -e "${YELLOW}🔧 To fix this:${NC}"
         echo "1. Go to Firebase Console: https://console.firebase.google.com/project/$PROJECT_ID/settings/general"
         echo "2. Click on your Android app"
-        echo -e "3. Add this SHA-1 fingerprint: ${BLUE}$SHA1${NC}"
-        echo "4. Download new google-services.json"
-        echo "5. Replace app/google-services.json with the new file"
-        echo "6. Run: ./gradlew clean build"
+        echo -e "3. Add this debug SHA-1 fingerprint: ${BLUE}$DEBUG_SHA1${NC}"
+        echo "4. If building release APK, also add release keystore SHA-1"
+        echo "5. Download new google-services.json"
+        echo "6. Replace app/google-services.json with the new file"
+        echo "7. Run: ./gradlew clean build"
     fi
 else
     echo -e "${RED}❌ google-services.json not found${NC}"
@@ -121,12 +140,21 @@ echo "   Check DEVICE_TROUBLESHOOTING.md"
 echo ""
 
 echo -e "${GREEN}🎯 Quick Fix Summary:${NC}"
-if [ ! -z "$SHA1" ]; then
-    echo -e "1. Add this SHA-1 to Firebase: ${BLUE}$SHA1${NC}"
-    echo "2. Download new google-services.json"
-    echo "3. Replace app/google-services.json"
-    echo "4. Run: ./gradlew clean build"
-    echo "5. Test on your device"
+if [ ! -z "$DEBUG_SHA1" ]; then
+    echo -e "1. Add debug SHA-1 to Firebase: ${BLUE}$DEBUG_SHA1${NC}"
+    if [ -f "keystore.jks" ]; then
+        echo -e "2. ${YELLOW}Get release keystore SHA-1 and add it to Firebase too${NC}"
+        echo "   Run: keytool -list -v -keystore keystore.jks -alias [your_alias]"
+    else
+        echo "2. No release keystore found (debug builds only)"
+    fi
+    echo "3. Download new google-services.json"
+    echo "4. Replace app/google-services.json"
+    echo "5. Run: ./gradlew clean build"
+    echo "6. Test on your device"
+    echo ""
+    echo -e "${RED}🚨 IMPORTANT for signed APKs:${NC}"
+    echo -e "${YELLOW}Release builds require the RELEASE keystore SHA-1, not debug SHA-1!${NC}"
 else
     echo "1. Set up Android Studio development environment"
     echo "2. Run this script again to get SHA-1 fingerprint"

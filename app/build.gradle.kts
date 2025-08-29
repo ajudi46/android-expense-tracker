@@ -23,6 +23,21 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("../keystore.jks")
+            // Note: For security, store password in gradle.properties or environment variables
+            // storePassword = project.findProperty("KEYSTORE_PASSWORD") as String? ?: ""
+            // keyAlias = project.findProperty("KEY_ALIAS") as String? ?: ""
+            // keyPassword = project.findProperty("KEY_PASSWORD") as String? ?: ""
+            
+            // Uncomment and set these when building release APK:
+            // storePassword = "your_keystore_password"
+            // keyAlias = "your_key_alias"  // common: key0, androidreleasekey, release
+            // keyPassword = "your_key_password"
+        }
+    }
+    
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -30,6 +45,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Uncomment to enable signing for release builds:
+            // signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
