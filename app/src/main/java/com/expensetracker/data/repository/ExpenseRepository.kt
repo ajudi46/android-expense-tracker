@@ -68,12 +68,18 @@ class ExpenseRepository @Inject constructor(
             val month = calendar.get(Calendar.MONTH) + 1
             val year = calendar.get(Calendar.YEAR)
             
+            // Debug: Print transaction details
+            println("🔍 DEBUG: Transaction added - Category: '${transaction.category}', Amount: ${transaction.amount}, Month: $month, Year: $year")
+            
             // Check if budget exists for this category in this month
             val existingBudget = getBudgetForCategory(transaction.category, month, year)
-            existingBudget?.let { budget ->
+            if (existingBudget != null) {
                 // Simply add the new transaction amount to current spent
-                val newSpentAmount = budget.currentSpent + transaction.amount
+                val newSpentAmount = existingBudget.currentSpent + transaction.amount
+                println("🔍 DEBUG: Budget found! Current: ${existingBudget.currentSpent}, New: $newSpentAmount")
                 updateBudgetSpent(transaction.category, month, year, newSpentAmount)
+            } else {
+                println("🔍 DEBUG: NO BUDGET FOUND for category '${transaction.category}' in $month/$year")
             }
         }
     }
