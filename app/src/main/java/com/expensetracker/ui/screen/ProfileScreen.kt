@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -28,6 +29,7 @@ import com.expensetracker.ui.viewmodel.AuthViewModel
 fun ProfileScreen(
     onNavigateBack: () -> Unit,
     onLogoutSuccess: () -> Unit = {},
+    onNavigateToLogin: () -> Unit = {},
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
@@ -97,16 +99,16 @@ fun ProfileScreen(
                         )
                     }
                     
-                    // User Email
-                    Text(
-                        text = authState.userEmail ?: "No email available",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    
+                    // User Email or Status
                     if (authState.isSignedIn) {
+                        Text(
+                            text = authState.userEmail ?: "No email available",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        
                         Surface(
                             shape = RoundedCornerShape(8.dp),
                             color = MaterialTheme.colorScheme.primaryContainer
@@ -116,6 +118,47 @@ fun ProfileScreen(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "Not signed in",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        
+                        Text(
+                            text = "Sign in to sync your data across devices",
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        // Login Button
+                        Button(
+                            onClick = onNavigateToLogin,
+                            modifier = Modifier.fillMaxWidth(0.8f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Login,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Sign In",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
@@ -169,15 +212,25 @@ fun ProfileScreen(
                         color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                     )
                     
-                    // Logout Option
-                    ProfileOption(
-                        icon = Icons.Default.Logout,
-                        title = "Logout",
-                        subtitle = "Sign out from your account",
-                        onClick = { showLogoutDialog = true },
-                        enabled = authState.isSignedIn,
-                        isDestructive = true
-                    )
+                    // Login/Logout Option
+                    if (authState.isSignedIn) {
+                        ProfileOption(
+                            icon = Icons.Default.Logout,
+                            title = "Logout",
+                            subtitle = "Sign out from your account",
+                            onClick = { showLogoutDialog = true },
+                            enabled = true,
+                            isDestructive = true
+                        )
+                    } else {
+                        ProfileOption(
+                            icon = Icons.Default.Login,
+                            title = "Sign In",
+                            subtitle = "Sign in to access cloud features",
+                            onClick = onNavigateToLogin,
+                            enabled = true
+                        )
+                    }
                 }
             }
             

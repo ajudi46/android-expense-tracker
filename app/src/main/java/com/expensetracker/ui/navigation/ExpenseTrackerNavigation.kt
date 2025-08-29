@@ -124,6 +124,10 @@ fun ExpenseTrackerNavigation(
                             popUpTo(0) { inclusive = true }
                         }
                     },
+                    onNavigateToLogin = {
+                        // Navigate to login screen from profile
+                        navController.navigate(Screen.SignIn.route)
+                    },
                     authViewModel = authViewModel
                 )
             }
