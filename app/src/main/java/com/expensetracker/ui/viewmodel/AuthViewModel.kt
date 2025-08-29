@@ -620,7 +620,8 @@ class AuthViewModel @Inject constructor(
                         // Map account IDs (cloud account IDs might be different than local)
                         val mappedTransaction = mapCloudTransactionToLocal(cloudTransaction)
                         if (mappedTransaction != null) {
-                            val newTransactionId = expenseRepository.insertTransaction(mappedTransaction.copy(id = 0)) // Let DB assign new ID
+                            // Insert transaction but don't apply balance changes yet (will be done in recalculateAllBalances)
+                            val newTransactionId = expenseRepository.insertTransactionWithoutBalanceUpdate(mappedTransaction.copy(id = 0))
                             transactionsRestored++
                             Log.d("ExpenseTracker", "Restored transaction from cloud: ${cloudTransaction.description} (new ID: $newTransactionId)")
                         } else {
@@ -649,32 +650,55 @@ class AuthViewModel @Inject constructor(
                 return null
             }
             
-            // Try to find matching account by ID first, then by name/type
+            // Get cloud accounts to help with name-based mapping
+            val cloudAccountsResult = cloudSyncRepository.syncAccountsFromCloud()
+            val cloudAccounts = cloudAccountsResult.getOrNull() ?: emptyList()
+            
+            // Find the cloud account that this transaction belongs to
+            val cloudFromAccount = cloudAccounts.find { it.id == cloudTransaction.fromAccountId }
+            val cloudToAccount = if (cloudTransaction.toAccountId != null) {
+                cloudAccounts.find { it.id == cloudTransaction.toAccountId }
+            } else null
+            
+            // Try to find matching local account by ID first, then by name
             var fromAccount = localAccounts.find { it.id == cloudTransaction.fromAccountId }
+            if (fromAccount == null && cloudFromAccount != null) {
+                // Try to match by account name and initial balance
+                fromAccount = localAccounts.find { 
+                    it.name == cloudFromAccount.name && it.initialBalance == cloudFromAccount.initialBalance
+                }
+                if (fromAccount != null) {
+                    Log.d("ExpenseTracker", "Mapped cloud transaction by name: ${cloudFromAccount.name} → ${fromAccount.name}")
+                }
+            }
+            
+            // If still no match, something is wrong - don't map to random account
             if (fromAccount == null) {
-                // If no exact ID match, use first available account
-                fromAccount = localAccounts.firstOrNull()
-                Log.d("ExpenseTracker", "Mapped cloud transaction to different account: ${fromAccount?.name}")
+                Log.w("ExpenseTracker", "Could not find matching account for transaction ${cloudTransaction.description}. Cloud account: ${cloudFromAccount?.name}, Available local accounts: ${localAccounts.map { it.name }}")
+                return null
             }
             
             var toAccount: com.expensetracker.data.model.Account? = null
             if (cloudTransaction.toAccountId != null) {
+                // Try to match toAccount by ID first, then by name
                 toAccount = localAccounts.find { it.id == cloudTransaction.toAccountId }
-                if (toAccount == null && localAccounts.size > 1) {
-                    // Use second account if available, otherwise same account
-                    toAccount = localAccounts.getOrNull(1) ?: fromAccount
+                if (toAccount == null && cloudToAccount != null) {
+                    toAccount = localAccounts.find { 
+                        it.name == cloudToAccount.name && it.initialBalance == cloudToAccount.initialBalance
+                    }
+                    if (toAccount != null) {
+                        Log.d("ExpenseTracker", "Mapped cloud transaction TO account by name: ${cloudToAccount.name} → ${toAccount.name}")
+                    }
                 }
             }
             
-            return if (fromAccount != null) {
-                cloudTransaction.copy(
-                    id = 0, // Let database assign new ID
-                    fromAccountId = fromAccount.id,
-                    toAccountId = toAccount?.id
-                )
-            } else {
-                null
-            }
+            Log.d("ExpenseTracker", "Transaction mapping: ${cloudTransaction.description} from ${cloudFromAccount?.name} (${cloudTransaction.fromAccountId}) → ${fromAccount.name} (${fromAccount.id})")
+            
+            return cloudTransaction.copy(
+                id = 0, // Let database assign new ID
+                fromAccountId = fromAccount.id,
+                toAccountId = toAccount?.id
+            )
         } catch (e: Exception) {
             Log.e("ExpenseTracker", "Error mapping cloud transaction: ${e.message}")
             return null

@@ -55,6 +55,13 @@ class ExpenseRepository @Inject constructor(
         return transactionId
     }
     
+    // Insert transaction without applying balance changes (used during restore)
+    suspend fun insertTransactionWithoutBalanceUpdate(transaction: Transaction): Long {
+        val transactionId = transactionDao.insertTransaction(transaction)
+        android.util.Log.d("ExpenseRepository", "Transaction inserted WITHOUT balance update: ${transaction.description}")
+        return transactionId
+    }
+    
     private suspend fun updateBudgetSpending(transaction: Transaction) {
         if (transaction.type == TransactionType.EXPENSE) {
             val calendar = Calendar.getInstance()
