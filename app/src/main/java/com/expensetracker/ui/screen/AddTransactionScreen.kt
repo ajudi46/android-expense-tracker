@@ -55,7 +55,7 @@ fun AddTransactionScreen(
             .padding(start = 16.dp, end = 16.dp, top = 56.dp, bottom = 100.dp), // Better padding for status bar and nav
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header
+                // Header
         Text(
             text = "Add Transaction",
             style = MaterialTheme.typography.headlineLarge,
@@ -63,25 +63,7 @@ fun AddTransactionScreen(
             modifier = Modifier.padding(vertical = 8.dp)
         )
         
-        // STEP 1: Amount Input
-        OutlinedTextField(
-            value = amount,
-            onValueChange = { amount = it },
-            label = { Text("Amount") },
-            leadingIcon = { Text("$", style = MaterialTheme.typography.titleMedium) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.fillMaxWidth()
-        )
-        
-        // STEP 2: Description Input (Optional)
-        OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text("Description (Optional)") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        
-        // STEP 3: Transaction Type Selection
+        // Transaction Type Selection - FIRST PRIORITY
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -111,7 +93,8 @@ fun AddTransactionScreen(
                             contentColor = if (selectedType == TransactionType.EXPENSE) 
                                 MaterialTheme.colorScheme.onPrimary 
                             else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        ),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("Expense")
                     }
@@ -126,7 +109,8 @@ fun AddTransactionScreen(
                             contentColor = if (selectedType == TransactionType.INCOME) 
                                 MaterialTheme.colorScheme.onPrimary 
                             else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        ),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("Income")
                     }
@@ -141,15 +125,34 @@ fun AddTransactionScreen(
                             contentColor = if (selectedType == TransactionType.TRANSFER) 
                                 MaterialTheme.colorScheme.onPrimary 
                             else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        ),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("Transfer")
                     }
                 }
             }
         }
+
+        // Amount Input
+        OutlinedTextField(
+            value = amount,
+            onValueChange = { amount = it },
+            label = { Text("Amount") },
+            leadingIcon = { Text("$", style = MaterialTheme.typography.titleMedium) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Description Input
+        OutlinedTextField(
+            value = description,
+            onValueChange = { description = it },
+            label = { Text("Description") },
+            modifier = Modifier.fillMaxWidth()
+        )
         
-        // STEP 5: Simple dropdown test
+        // Category Selection
         var expandedCategory by remember { mutableStateOf(false) }
         
         ExposedDropdownMenuBox(
@@ -160,7 +163,7 @@ fun AddTransactionScreen(
                 value = selectedCategory,
                 onValueChange = { },
                 readOnly = true,
-                label = { Text("Category (Test)") },
+                label = { Text("Category") },
                 trailingIcon = {
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategory)
                 },
@@ -196,7 +199,7 @@ fun AddTransactionScreen(
                 value = selectedAccount?.name ?: "",
                 onValueChange = { },
                 readOnly = true,
-                label = { Text("Account (Dynamic Data)") },
+                label = { Text("Account") },
                 trailingIcon = {
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedAccount)
                 },
