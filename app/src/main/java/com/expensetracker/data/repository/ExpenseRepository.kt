@@ -43,24 +43,15 @@ class ExpenseRepository @Inject constructor(
     suspend fun insertTransaction(transaction: Transaction): Long {
         val transactionId = transactionDao.insertTransaction(transaction)
         
-        // Update account balances based on transaction type
-        when (transaction.type) {
-            TransactionType.EXPENSE -> {
-                accountDao.updateBalance(transaction.fromAccountId, -transaction.amount)
-                // Update budget for expense transactions
-                updateBudgetSpending(transaction)
-            }
-            TransactionType.INCOME -> {
-                accountDao.updateBalance(transaction.fromAccountId, transaction.amount)
-            }
-            TransactionType.TRANSFER -> {
-                transaction.toAccountId?.let { toAccountId ->
-                    accountDao.updateBalance(transaction.fromAccountId, -transaction.amount)
-                    accountDao.updateBalance(toAccountId, transaction.amount)
-                }
-            }
+        // Apply transaction balance changes
+        applyTransactionBalance(transaction)
+        
+        // Update budget for expense transactions
+        if (transaction.type == TransactionType.EXPENSE) {
+            updateBudgetSpending(transaction)
         }
         
+        android.util.Log.d("ExpenseRepository", "Transaction inserted with balance update: ${transaction.description}")
         return transactionId
     }
     
@@ -97,8 +88,37 @@ class ExpenseRepository @Inject constructor(
         }
     }
     
-    suspend fun updateTransaction(transaction: Transaction) = transactionDao.updateTransaction(transaction)
-    suspend fun deleteTransaction(transaction: Transaction) = transactionDao.deleteTransaction(transaction)
+    suspend fun updateTransaction(transaction: Transaction) {
+        // Get the original transaction to calculate balance difference
+        val originalTransaction = transactionDao.getTransactionById(transaction.id)
+        
+        if (originalTransaction != null) {
+            // Revert the original transaction's balance changes
+            revertTransactionBalance(originalTransaction)
+        }
+        
+        // Update the transaction
+        transactionDao.updateTransaction(transaction)
+        
+        // Apply the new transaction's balance changes
+        applyTransactionBalance(transaction)
+        
+        // Update budget if it's an expense transaction
+        if (transaction.type == TransactionType.EXPENSE) {
+            updateBudgetSpending(transaction)
+        }
+        
+        android.util.Log.d("ExpenseRepository", "Transaction updated with balance recalculation: ${transaction.description}")
+    }
+    suspend fun deleteTransaction(transaction: Transaction) {
+        // Revert the transaction's balance changes before deleting
+        revertTransactionBalance(transaction)
+        
+        // Delete the transaction
+        transactionDao.deleteTransaction(transaction)
+        
+        android.util.Log.d("ExpenseRepository", "Transaction deleted with balance revert: ${transaction.description}")
+    }
 
     // Category operations
     fun getAllCategories(): Flow<List<Category>> = categoryDao.getAllCategories()
@@ -171,5 +191,108 @@ class ExpenseRepository @Inject constructor(
         budgetDao.deleteAllBudgets()
         
         android.util.Log.d("ExpenseRepository", "All local data cleared successfully")
+    }
+    
+    // Helper functions for balance management
+    private suspend fun applyTransactionBalance(transaction: Transaction) {
+        when (transaction.type) {
+            TransactionType.EXPENSE -> {
+                accountDao.updateBalance(transaction.fromAccountId, -transaction.amount)
+            }
+            TransactionType.INCOME -> {
+                accountDao.updateBalance(transaction.fromAccountId, transaction.amount)
+            }
+            TransactionType.TRANSFER -> {
+                transaction.toAccountId?.let { toAccountId ->
+                    accountDao.updateBalance(transaction.fromAccountId, -transaction.amount)
+                    accountDao.updateBalance(toAccountId, transaction.amount)
+                }
+            }
+        }
+    }
+    
+    private suspend fun revertTransactionBalance(transaction: Transaction) {
+        when (transaction.type) {
+            TransactionType.EXPENSE -> {
+                // Revert expense: add back the amount
+                accountDao.updateBalance(transaction.fromAccountId, transaction.amount)
+            }
+            TransactionType.INCOME -> {
+                // Revert income: subtract the amount
+                accountDao.updateBalance(transaction.fromAccountId, -transaction.amount)
+            }
+            TransactionType.TRANSFER -> {
+                transaction.toAccountId?.let { toAccountId ->
+                    // Revert transfer: reverse the movements
+                    accountDao.updateBalance(transaction.fromAccountId, transaction.amount)
+                    accountDao.updateBalance(toAccountId, -transaction.amount)
+                }
+            }
+        }
+    }
+    
+    // Function to recalculate all account balances from scratch
+    suspend fun recalculateAllBalances() {
+        android.util.Log.d("ExpenseRepository", "Starting complete balance recalculation...")
+        
+        try {
+            // Get all accounts
+            val accounts = mutableListOf<Account>()
+            getAllAccounts().collect { accountList ->
+                accounts.clear()
+                accounts.addAll(accountList)
+                return@collect // Exit after first emission
+            }
+            
+            // Get all transactions
+            val transactions = mutableListOf<Transaction>()
+            getAllTransactions().collect { transactionList ->
+                transactions.clear()
+                transactions.addAll(transactionList)
+                return@collect // Exit after first emission
+            }
+            
+            android.util.Log.d("ExpenseRepository", "Processing ${accounts.size} accounts and ${transactions.size} transactions")
+            
+            // Reset all account balances based on transactions
+            for (account in accounts) {
+                // Start with initial balance of 0 and calculate from all transactions
+                var calculatedBalance = 0.0
+                
+                for (transaction in transactions) {
+                    when (transaction.type) {
+                        TransactionType.EXPENSE -> {
+                            if (transaction.fromAccountId == account.id) {
+                                calculatedBalance -= transaction.amount
+                            }
+                        }
+                        TransactionType.INCOME -> {
+                            if (transaction.fromAccountId == account.id) {
+                                calculatedBalance += transaction.amount
+                            }
+                        }
+                        TransactionType.TRANSFER -> {
+                            if (transaction.fromAccountId == account.id) {
+                                calculatedBalance -= transaction.amount
+                            }
+                            if (transaction.toAccountId == account.id) {
+                                calculatedBalance += transaction.amount
+                            }
+                        }
+                    }
+                }
+                
+                // Update the account with the recalculated balance
+                val updatedAccount = account.copy(balance = calculatedBalance)
+                accountDao.updateAccount(updatedAccount)
+                
+                android.util.Log.d("ExpenseRepository", "Account ${account.name}: recalculated balance = $calculatedBalance")
+            }
+            
+            android.util.Log.d("ExpenseRepository", "Balance recalculation completed successfully")
+        } catch (e: Exception) {
+            android.util.Log.e("ExpenseRepository", "Balance recalculation failed: ${e.message}", e)
+            throw e
+        }
     }
 }

@@ -215,6 +215,11 @@ class AuthViewModel @Inject constructor(
                 // Then, restore data from cloud and merge with local
                 restoreAndMergeCloudData()
                 
+                // Recalculate balances after initial sync to ensure consistency
+                Log.d("ExpenseTracker", "Recalculating balances after initial sync...")
+                expenseRepository.recalculateAllBalances()
+                Log.d("ExpenseTracker", "Balance recalculation after initial sync completed")
+                
                 _uiState.value = _uiState.value.copy(
                     isSyncing = false,
                     errorMessage = if (syncResult.isFailure) {
@@ -250,6 +255,11 @@ class AuthViewModel @Inject constructor(
                 
                 // Then download and merge cloud data
                 restoreAndMergeCloudData()
+                
+                // Recalculate balances after force sync to ensure consistency
+                Log.d("ExpenseTracker", "Recalculating balances after force sync...")
+                expenseRepository.recalculateAllBalances()
+                Log.d("ExpenseTracker", "Balance recalculation after force sync completed")
                 
                 _uiState.value = _uiState.value.copy(
                     isSyncing = false,
@@ -369,13 +379,19 @@ class AuthViewModel @Inject constructor(
                 // Download and merge cloud data
                 restoreAndMergeCloudData()
                 
+                // Automatically recalculate all account balances after restore to ensure consistency
+                Log.d("ExpenseTracker", "Recalculating balances after restore...")
+                showToast("Synchronizing account balances...", ToastType.INFO)
+                expenseRepository.recalculateAllBalances()
+                Log.d("ExpenseTracker", "Balance recalculation after restore completed")
+                
                 _uiState.value = _uiState.value.copy(
                     isRestoring = false,
                     lastRestoreTime = System.currentTimeMillis(),
                     errorMessage = null
                 )
                 
-                showToast("✅ Restore completed! $accountCount accounts, $transactionCount transactions", ToastType.SUCCESS)
+                showToast("✅ Restore completed! $accountCount accounts, $transactionCount transactions, balances synchronized", ToastType.SUCCESS)
                 Log.d("ExpenseTracker", "Restore operation completed successfully")
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isRestoring = false)
@@ -462,6 +478,7 @@ class AuthViewModel @Inject constructor(
         }
     }
     
+
     fun clearCloudData() {
         if (!_uiState.value.isSignedIn) {
             showToast("Please sign in to clear cloud data", ToastType.WARNING)
