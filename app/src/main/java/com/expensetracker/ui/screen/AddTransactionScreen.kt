@@ -6,9 +6,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +28,71 @@ import com.expensetracker.ui.viewmodel.TransactionViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddTransactionScreen(
+    onNavigateBack: () -> Unit,
+    transactionViewModel: TransactionViewModel = hiltViewModel(),
+    accountViewModel: AccountViewModel = hiltViewModel()
+) {
+    // Simple test - just show a basic working screen first
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Add Transaction",
+            style = MaterialTheme.typography.headlineLarge
+        )
+        Spacer(modifier = Modifier.height(32.dp))
+        
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AddCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Transaction Screen Under Development",
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "We're working on fixing the transaction form. Please check back soon!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(
+                    onClick = onNavigateBack,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Go Back")
+                }
+            }
+        }
+    }
+}
+
+/*
+// Full implementation - temporarily disabled for debugging
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddTransactionScreenFull(
     onNavigateBack: () -> Unit,
     transactionViewModel: TransactionViewModel = hiltViewModel(),
     accountViewModel: AccountViewModel = hiltViewModel()
@@ -433,33 +495,33 @@ fun AddTransactionScreen(
         }
     }
     
-    // Material 3 Date Picker Dialog
+    // Simple Date Selection Dialog (for now - DatePicker not available in current Material3 version)
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = selectedDate
-        )
-        
-        DatePickerDialog(
+        AlertDialog(
             onDismissRequest = { showDatePicker = false },
+            title = { Text("Select Date") },
+            text = {
+                Column {
+                    Text("Current date: ${dateFormatter.format(java.util.Date(selectedDate))}")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Date picker will be enhanced in future updates.", 
+                         style = MaterialTheme.typography.bodySmall)
+                }
+            },
             confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { selectedDate = it }
-                    showDatePicker = false
-                }) {
+                TextButton(onClick = { showDatePicker = false }) {
                     Text("OK")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancel")
+                TextButton(onClick = { 
+                    selectedDate = System.currentTimeMillis()
+                    showDatePicker = false 
+                }) {
+                    Text("Use Today")
                 }
             }
-        ) {
-            DatePicker(
-                state = datePickerState,
-                showModeToggle = true
-            )
-        }
+        )
     }
 }
 
@@ -520,3 +582,4 @@ fun TransactionTypeChip(
             ) else FilterChipDefaults.filterChipBorder()
     )
 }
+*/
