@@ -207,7 +207,8 @@ fun AddTransactionScreen(
         // Date and Time Selection
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.Top
         ) {
             // Date Field
             OutlinedTextField(
@@ -215,14 +216,19 @@ fun AddTransactionScreen(
                 onValueChange = { },
                 readOnly = true,
                 label = { Text("Date") },
-                leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+                leadingIcon = { 
+                    Icon(Icons.Default.CalendarToday, contentDescription = null) 
+                },
                 trailingIcon = {
                     IconButton(onClick = { showDatePicker = true }) {
-                        Icon(Icons.Default.CalendarToday, contentDescription = "Select Date")
+                        Icon(Icons.Default.EditCalendar, contentDescription = "Select Date")
                     }
                 },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(16.dp)
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                singleLine = true
             )
             
             // Time Field
@@ -231,14 +237,19 @@ fun AddTransactionScreen(
                 onValueChange = { },
                 readOnly = true,
                 label = { Text("Time") },
-                leadingIcon = { Icon(Icons.Default.Schedule, contentDescription = null) },
+                leadingIcon = { 
+                    Icon(Icons.Default.Schedule, contentDescription = null) 
+                },
                 trailingIcon = {
                     IconButton(onClick = { showTimePicker = true }) {
-                        Icon(Icons.Default.Schedule, contentDescription = "Select Time")
+                        Icon(Icons.Default.AccessTime, contentDescription = "Select Time")
                     }
                 },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(16.dp)
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                singleLine = true
             )
         }
         
