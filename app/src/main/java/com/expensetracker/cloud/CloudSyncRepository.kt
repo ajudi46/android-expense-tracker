@@ -203,10 +203,32 @@ class CloudSyncRepository @Inject constructor(
         }
     }
     
-    // Full sync method
-    suspend fun performFullSync(): Result<Unit> {
+    // Full sync method - syncs ALL local data to cloud
+    suspend fun performFullSync(
+        localAccounts: List<Account> = emptyList(),
+        localTransactions: List<Transaction> = emptyList(), 
+        localCategories: List<Category> = emptyList(),
+        localBudgets: List<Budget> = emptyList()
+    ): Result<Unit> {
         return try {
             val currentUser = authRepository.getCurrentFirebaseUser() ?: throw Exception("User not signed in")
+            
+            // Sync all local data TO cloud
+            if (localAccounts.isNotEmpty()) {
+                syncAccountsToCloud(localAccounts)
+            }
+            
+            if (localTransactions.isNotEmpty()) {
+                syncTransactionsToCloud(localTransactions)
+            }
+            
+            if (localCategories.isNotEmpty()) {
+                syncCategoriesToCloud(localCategories)
+            }
+            
+            if (localBudgets.isNotEmpty()) {
+                syncBudgetsToCloud(localBudgets)
+            }
             
             // Update last sync timestamp
             authRepository.updateLastSyncTimestamp(currentUser.uid, System.currentTimeMillis())

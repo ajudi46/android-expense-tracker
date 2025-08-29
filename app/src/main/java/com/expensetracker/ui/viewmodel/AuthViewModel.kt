@@ -9,6 +9,7 @@ import com.google.android.gms.common.api.ApiException
 import com.expensetracker.auth.AuthenticationRepository
 import com.expensetracker.cloud.CloudSyncRepository
 import com.expensetracker.data.model.UserProfile
+import com.expensetracker.data.repository.ExpenseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -26,7 +27,8 @@ data class AuthUiState(
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthenticationRepository,
-    private val cloudSyncRepository: CloudSyncRepository
+    private val cloudSyncRepository: CloudSyncRepository,
+    private val expenseRepository: ExpenseRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -128,25 +130,36 @@ class AuthViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isSyncing = true, isLoading = false)
             
             try {
-                // First, try to restore data from cloud
+                // Get all local data
+                val localAccounts = expenseRepository.getAllAccounts().firstOrNull() ?: emptyList()
+                val localTransactions = expenseRepository.getAllTransactions().firstOrNull() ?: emptyList()
+                val localCategories = emptyList<com.expensetracker.data.model.Category>() // Categories not implemented yet
+                val localBudgets = emptyList<com.expensetracker.data.model.Budget>() // Budgets not implemented yet
+                
+                // First, sync local data TO cloud (backup)
+                val syncResult = cloudSyncRepository.performFullSync(
+                    localAccounts = localAccounts,
+                    localTransactions = localTransactions,
+                    localCategories = localCategories,
+                    localBudgets = localBudgets
+                )
+                
+                // Then, try to restore any additional data from cloud
                 cloudSyncRepository.syncAccountsFromCloud()
                 cloudSyncRepository.syncTransactionsFromCloud()
                 cloudSyncRepository.syncCategoriesFromCloud()
                 cloudSyncRepository.syncBudgetsFromCloud()
                 
-                // Mark full sync as complete
-                val result = cloudSyncRepository.performFullSync()
-                
                 _uiState.value = _uiState.value.copy(
                     isSyncing = false,
-                    errorMessage = if (result.isFailure) {
-                        "Sync completed with some issues: ${result.exceptionOrNull()?.message}"
+                    errorMessage = if (syncResult.isFailure) {
+                        "Sync completed with some issues: ${syncResult.exceptionOrNull()?.message}"
                     } else null
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isSyncing = false,
-                    errorMessage = "Initial sync failed: ${e.message}"
+                    errorMessage = "Sync failed: ${e.message}"
                 )
             }
         }
