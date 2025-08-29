@@ -27,9 +27,13 @@ data class AuthUiState(
     val userPhotoUrl: String? = null,
     val errorMessage: String? = null,
     val isSyncing: Boolean = false,
+    val isBackingUp: Boolean = false,
+    val isRestoring: Boolean = false,
     val hasSeenLogin: Boolean = false,
     val hasSkippedLogin: Boolean = false,
-    val shouldShowLogin: Boolean = false
+    val shouldShowLogin: Boolean = false,
+    val lastBackupTime: Long? = null,
+    val lastRestoreTime: Long? = null
 )
 
 @HiltViewModel
@@ -219,6 +223,69 @@ class AuthViewModel @Inject constructor(
                     errorMessage = "Sync failed: ${e.message}"
                 )
                 Log.e("ExpenseTracker", "Force sync failed: ${e.message}")
+            }
+        }
+    }
+    
+    fun backupDataToCloud() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isBackingUp = true, errorMessage = null)
+            
+            try {
+                // Get all local data
+                val localAccounts = expenseRepository.getAllAccounts().firstOrNull() ?: emptyList()
+                val localTransactions = expenseRepository.getAllTransactions().firstOrNull() ?: emptyList()
+                
+                // Upload to cloud
+                val result = cloudSyncRepository.performFullSync(
+                    localAccounts = localAccounts,
+                    localTransactions = localTransactions
+                )
+                
+                if (result.isSuccess) {
+                    _uiState.value = _uiState.value.copy(
+                        isBackingUp = false,
+                        lastBackupTime = System.currentTimeMillis(),
+                        errorMessage = null
+                    )
+                    Log.d("ExpenseTracker", "Backup completed successfully - ${localAccounts.size} accounts, ${localTransactions.size} transactions")
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isBackingUp = false,
+                        errorMessage = "Backup failed: ${result.exceptionOrNull()?.message}"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isBackingUp = false,
+                    errorMessage = "Backup failed: ${e.message}"
+                )
+                Log.e("ExpenseTracker", "Backup failed: ${e.message}")
+            }
+        }
+    }
+    
+    fun restoreDataFromCloud() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isRestoring = true, errorMessage = null)
+            
+            try {
+                // Download and merge cloud data
+                restoreAndMergeCloudData()
+                
+                _uiState.value = _uiState.value.copy(
+                    isRestoring = false,
+                    lastRestoreTime = System.currentTimeMillis(),
+                    errorMessage = null
+                )
+                
+                Log.d("ExpenseTracker", "Restore completed successfully")
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isRestoring = false,
+                    errorMessage = "Restore failed: ${e.message}"
+                )
+                Log.e("ExpenseTracker", "Restore failed: ${e.message}")
             }
         }
     }

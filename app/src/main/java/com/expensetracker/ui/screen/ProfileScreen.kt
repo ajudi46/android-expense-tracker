@@ -6,7 +6,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Logout
@@ -23,6 +25,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.expensetracker.ui.viewmodel.AuthViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +39,6 @@ fun ProfileScreen(
 ) {
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
-    var isSyncing by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -190,19 +194,58 @@ fun ProfileScreen(
                         color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                     )
                     
-                    // Sync Data Option
+                    // Backup Data Option
+                    ProfileOption(
+                        icon = Icons.Default.CloudUpload,
+                        title = "Backup to Cloud",
+                        subtitle = when {
+                            authState.isBackingUp -> "Backing up your data..."
+                            authState.lastBackupTime != null -> "Last backup: ${formatTime(authState.lastBackupTime!!)}"
+                            else -> "Upload your data to cloud storage"
+                        },
+                        onClick = {
+                            authViewModel.backupDataToCloud()
+                        },
+                        enabled = authState.isSignedIn && !authState.isBackingUp && !authState.isRestoring,
+                        showProgress = authState.isBackingUp
+                    )
+                    
+                    Divider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                    )
+                    
+                    // Restore Data Option
+                    ProfileOption(
+                        icon = Icons.Default.CloudDownload,
+                        title = "Restore from Cloud",
+                        subtitle = when {
+                            authState.isRestoring -> "Restoring your data..."
+                            authState.lastRestoreTime != null -> "Last restore: ${formatTime(authState.lastRestoreTime!!)}"
+                            else -> "Download and merge cloud data"
+                        },
+                        onClick = {
+                            authViewModel.restoreDataFromCloud()
+                        },
+                        enabled = authState.isSignedIn && !authState.isBackingUp && !authState.isRestoring,
+                        showProgress = authState.isRestoring
+                    )
+                    
+                    Divider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                    )
+                    
+                    // Full Sync Option (Backup + Restore)
                     ProfileOption(
                         icon = Icons.Default.CloudSync,
-                        title = "Sync Data with Cloud",
-                        subtitle = if (isSyncing) "Syncing..." else "Backup & restore your data",
+                        title = "Full Sync",
+                        subtitle = if (authState.isSyncing) "Syncing..." else "Backup & restore in one action",
                         onClick = {
-                            if (!isSyncing) {
-                                isSyncing = true
-                                authViewModel.forceFullSync()
-                            }
+                            authViewModel.forceFullSync()
                         },
-                        enabled = authState.isSignedIn && !isSyncing,
-                        showProgress = isSyncing
+                        enabled = authState.isSignedIn && !authState.isSyncing && !authState.isBackingUp && !authState.isRestoring,
+                        showProgress = authState.isSyncing
                     )
                     
                     Divider(
@@ -240,13 +283,6 @@ fun ProfileScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
-        }
-    }
-    
-    // Reset syncing state when sync completes
-    LaunchedEffect(authState.isSyncing) {
-        if (!authState.isSyncing && isSyncing) {
-            isSyncing = false
         }
     }
     
@@ -362,6 +398,23 @@ private fun ProfileOption(
                     color = MaterialTheme.colorScheme.primary
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun formatTime(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    val diff = now - timestamp
+    
+    return when {
+        diff < 60_000 -> "just now" // Less than 1 minute
+        diff < 3600_000 -> "${diff / 60_000}m ago" // Less than 1 hour
+        diff < 86400_000 -> "${diff / 3600_000}h ago" // Less than 1 day
+        diff < 604800_000 -> "${diff / 86400_000}d ago" // Less than 1 week
+        else -> {
+            val formatter = SimpleDateFormat("MMM dd", Locale.getDefault())
+            formatter.format(Date(timestamp))
         }
     }
 }
