@@ -89,12 +89,19 @@ fun ExpenseTrackerNavigation(
                 AddTransactionScreen(
                     onNavigateBack = {
                         navController.popBackStack()
+                    },
+                    onScrollDirectionChanged = { visible ->
+                        isBottomNavVisible = visible
                     }
                 )
             }
 
             composable(Screen.RecentTransactions.route) {
-                RecentTransactionsScreen()
+                RecentTransactionsScreen(
+                    onScrollDirectionChanged = { visible ->
+                        isBottomNavVisible = visible
+                    }
+                )
             }
 
             composable(Screen.Budget.route) {

@@ -3,6 +3,8 @@ package com.expensetracker.ui.screen
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
@@ -37,9 +39,36 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecentTransactionsScreen(
+    onScrollDirectionChanged: (Boolean) -> Unit = {},
     transactionViewModel: TransactionViewModel = hiltViewModel()
 ) {
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.getDefault())
+    val listState = rememberLazyListState()
+    
+    // Track scroll direction
+    LaunchedEffect(listState) {
+        var previousFirstVisibleItemIndex = 0
+        var previousFirstVisibleItemScrollOffset = 0
+        
+        snapshotFlow {
+            listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
+        }.collect { (currentIndex, currentOffset) ->
+            val isScrollingDown = when {
+                currentIndex > previousFirstVisibleItemIndex -> true
+                currentIndex < previousFirstVisibleItemIndex -> false
+                else -> currentOffset > previousFirstVisibleItemScrollOffset
+            }
+            
+            // Only call if there's actual scrolling happening
+            if (currentIndex != previousFirstVisibleItemIndex || 
+                kotlin.math.abs(currentOffset - previousFirstVisibleItemScrollOffset) > 10) {
+                onScrollDirectionChanged(!isScrollingDown) // Show nav when scrolling up
+            }
+            
+            previousFirstVisibleItemIndex = currentIndex
+            previousFirstVisibleItemScrollOffset = currentOffset
+        }
+    }
     
     // Month navigation state
     var currentMonth by remember { mutableStateOf(Calendar.getInstance().get(Calendar.MONTH) + 1) }
@@ -128,6 +157,7 @@ fun RecentTransactionsScreen(
             }
         } else {
             LazyColumn(
+                state = listState,
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(monthTransactions) { transaction ->

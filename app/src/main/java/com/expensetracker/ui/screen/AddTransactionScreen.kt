@@ -31,6 +31,7 @@ import com.expensetracker.ui.viewmodel.TransactionViewModel
 @Composable
 fun AddTransactionScreen(
     onNavigateBack: () -> Unit,
+    onScrollDirectionChanged: (Boolean) -> Unit = {},
     transactionViewModel: TransactionViewModel = hiltViewModel(),
     accountViewModel: AccountViewModel = hiltViewModel()
 ) {
@@ -52,6 +53,11 @@ fun AddTransactionScreen(
     
     // Test ViewModel integration
     val accounts by accountViewModel.accounts.collectAsStateWithLifecycle(initialValue = emptyList())
+    
+    // Ensure bottom navigation is visible on this screen
+    LaunchedEffect(Unit) {
+        onScrollDirectionChanged(true)
+    }
     
     // Enhanced categories (keeping same structure, just better options)
     val enhancedCategories = listOf(
