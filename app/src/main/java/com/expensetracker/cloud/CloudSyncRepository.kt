@@ -48,7 +48,7 @@ class CloudSyncRepository @Inject constructor(
             val userCollection = getUserCollection("accounts") ?: throw Exception("User not signed in")
             
             val snapshot = firestore.collection(userCollection)
-                .orderBy("name", Query.Direction.ASCENDING)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
                 .get()
                 .await()
             
@@ -57,12 +57,14 @@ class CloudSyncRepository @Inject constructor(
                     val data = document.data ?: return@mapNotNull null
                     encryptionManager.decryptAccount(data)
                 } catch (e: Exception) {
+                    android.util.Log.e("CloudSync", "Failed to decrypt account: ${e.message}")
                     null // Skip corrupted data
                 }
             }
             
             Result.success(accounts)
         } catch (e: Exception) {
+            android.util.Log.e("CloudSync", "Failed to sync accounts from cloud: ${e.message}")
             Result.failure(e)
         }
     }
@@ -107,12 +109,14 @@ class CloudSyncRepository @Inject constructor(
                     val data = document.data ?: return@mapNotNull null
                     encryptionManager.decryptTransaction(data)
                 } catch (e: Exception) {
+                    android.util.Log.e("CloudSync", "Failed to decrypt transaction: ${e.message}")
                     null // Skip corrupted data
                 }
             }
             
             Result.success(transactions)
         } catch (e: Exception) {
+            android.util.Log.e("CloudSync", "Failed to sync transactions from cloud: ${e.message}")
             Result.failure(e)
         }
     }

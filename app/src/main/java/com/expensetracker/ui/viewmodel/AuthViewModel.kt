@@ -266,10 +266,42 @@ class AuthViewModel @Inject constructor(
     }
     
     fun restoreDataFromCloud() {
+        if (!_uiState.value.isSignedIn) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = "Please sign in to restore data from cloud"
+            )
+            return
+        }
+        
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isRestoring = true, errorMessage = null)
             
             try {
+                Log.d("ExpenseTracker", "Starting cloud restore operation")
+                
+                // First check if there's any data in the cloud
+                val cloudAccounts = cloudSyncRepository.syncAccountsFromCloud()
+                val cloudTransactions = cloudSyncRepository.syncTransactionsFromCloud()
+                
+                if (cloudAccounts.isFailure && cloudTransactions.isFailure) {
+                    val accountError = cloudAccounts.exceptionOrNull()?.message ?: "Unknown error"
+                    val transactionError = cloudTransactions.exceptionOrNull()?.message ?: "Unknown error"
+                    throw Exception("Failed to connect to cloud: Account Error: $accountError, Transaction Error: $transactionError")
+                }
+                
+                val accountCount = cloudAccounts.getOrNull()?.size ?: 0
+                val transactionCount = cloudTransactions.getOrNull()?.size ?: 0
+                
+                if (accountCount == 0 && transactionCount == 0) {
+                    _uiState.value = _uiState.value.copy(
+                        isRestoring = false,
+                        errorMessage = "No data found in cloud. Please backup your data first, then try restore."
+                    )
+                    return@launch
+                }
+                
+                Log.d("ExpenseTracker", "Found cloud data: $accountCount accounts, $transactionCount transactions")
+                
                 // Download and merge cloud data
                 restoreAndMergeCloudData()
                 
@@ -279,13 +311,13 @@ class AuthViewModel @Inject constructor(
                     errorMessage = null
                 )
                 
-                Log.d("ExpenseTracker", "Restore completed successfully")
+                Log.d("ExpenseTracker", "Restore operation completed successfully")
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isRestoring = false,
                     errorMessage = "Restore failed: ${e.message}"
                 )
-                Log.e("ExpenseTracker", "Restore failed: ${e.message}")
+                Log.e("ExpenseTracker", "Restore operation failed: ${e.message}", e)
             }
         }
     }
@@ -307,32 +339,54 @@ class AuthViewModel @Inject constructor(
     
     private suspend fun restoreAndMergeCloudData() {
         try {
+            Log.d("ExpenseTracker", "Starting restore and merge from cloud")
+            
             // Get cloud data
             val cloudAccounts = cloudSyncRepository.syncAccountsFromCloud()
             val cloudTransactions = cloudSyncRepository.syncTransactionsFromCloud()
+            
+            Log.d("ExpenseTracker", "Cloud accounts result: ${cloudAccounts.isSuccess}, data: ${cloudAccounts.getOrNull()?.size} accounts")
+            Log.d("ExpenseTracker", "Cloud transactions result: ${cloudTransactions.isSuccess}, data: ${cloudTransactions.getOrNull()?.size} transactions")
+            
+            if (cloudAccounts.isFailure) {
+                Log.e("ExpenseTracker", "Failed to get cloud accounts: ${cloudAccounts.exceptionOrNull()?.message}")
+            }
+            
+            if (cloudTransactions.isFailure) {
+                Log.e("ExpenseTracker", "Failed to get cloud transactions: ${cloudTransactions.exceptionOrNull()?.message}")
+            }
             
             // Get current local data
             val localAccounts = expenseRepository.getAllAccounts().firstOrNull() ?: emptyList()
             val localTransactions = expenseRepository.getAllTransactions().firstOrNull() ?: emptyList()
             
+            Log.d("ExpenseTracker", "Local data: ${localAccounts.size} accounts, ${localTransactions.size} transactions")
+            
             // Merge accounts
+            var accountsRestored = 0
             if (cloudAccounts.isSuccess) {
                 val accountsToAdd = cloudAccounts.getOrNull() ?: emptyList()
+                Log.d("ExpenseTracker", "Processing ${accountsToAdd.size} cloud accounts for restore")
+                
                 accountsToAdd.forEach { cloudAccount ->
                     // Check if account already exists locally (by name, since IDs might differ)
                     val existsLocally = localAccounts.any { it.name == cloudAccount.name }
                     if (!existsLocally) {
                         // Add cloud account to local database
-                        expenseRepository.insertAccount(cloudAccount.copy(id = 0)) // Let DB assign new ID
-                        Log.d("ExpenseTracker", "Restored account from cloud: ${cloudAccount.name}")
+                        val newAccountId = expenseRepository.insertAccount(cloudAccount.copy(id = 0)) // Let DB assign new ID
+                        accountsRestored++
+                        Log.d("ExpenseTracker", "Restored account from cloud: ${cloudAccount.name} (new ID: $newAccountId)")
+                    } else {
+                        Log.d("ExpenseTracker", "Account already exists locally: ${cloudAccount.name}")
                     }
                 }
             }
             
             // Merge transactions
+            var transactionsRestored = 0
             if (cloudTransactions.isSuccess) {
                 val transactionsToAdd = cloudTransactions.getOrNull() ?: emptyList()
-                val localTransactionTimes = localTransactions.map { it.createdAt }.toSet()
+                Log.d("ExpenseTracker", "Processing ${transactionsToAdd.size} cloud transactions for restore")
                 
                 transactionsToAdd.forEach { cloudTransaction ->
                     // Check if transaction already exists locally (by timestamp + amount + description)
@@ -346,15 +400,22 @@ class AuthViewModel @Inject constructor(
                         // Map account IDs (cloud account IDs might be different than local)
                         val mappedTransaction = mapCloudTransactionToLocal(cloudTransaction)
                         if (mappedTransaction != null) {
-                            expenseRepository.insertTransaction(mappedTransaction.copy(id = 0)) // Let DB assign new ID
-                            Log.d("ExpenseTracker", "Restored transaction from cloud: ${cloudTransaction.description}")
+                            val newTransactionId = expenseRepository.insertTransaction(mappedTransaction.copy(id = 0)) // Let DB assign new ID
+                            transactionsRestored++
+                            Log.d("ExpenseTracker", "Restored transaction from cloud: ${cloudTransaction.description} (new ID: $newTransactionId)")
+                        } else {
+                            Log.w("ExpenseTracker", "Could not map cloud transaction to local accounts: ${cloudTransaction.description}")
                         }
+                    } else {
+                        Log.d("ExpenseTracker", "Transaction already exists locally: ${cloudTransaction.description}")
                     }
                 }
             }
             
+            Log.d("ExpenseTracker", "Restore completed: $accountsRestored accounts, $transactionsRestored transactions restored")
+            
         } catch (e: Exception) {
-            Log.e("ExpenseTracker", "Error restoring cloud data: ${e.message}")
+            Log.e("ExpenseTracker", "Error restoring cloud data: ${e.message}", e)
         }
     }
     
