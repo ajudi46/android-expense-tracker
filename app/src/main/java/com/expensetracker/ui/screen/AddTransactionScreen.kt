@@ -32,10 +32,13 @@ fun AddTransactionScreen(
     transactionViewModel: TransactionViewModel = hiltViewModel(),
     accountViewModel: AccountViewModel = hiltViewModel()
 ) {
-    // STEP 3: Add transaction type selection
+    // STEP 4: Add ViewModel integration
     var amount by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf(TransactionType.EXPENSE) }
+    
+    // Test ViewModel integration
+    val accounts by accountViewModel.accounts.collectAsStateWithLifecycle(initialValue = emptyList())
     
     Column(
         modifier = Modifier
@@ -45,12 +48,12 @@ fun AddTransactionScreen(
     ) {
         // Header
         Text(
-            text = "Add Transaction - Step 3",
+            text = "Add Transaction - Step 4",
             style = MaterialTheme.typography.headlineLarge
         )
         
         Text(
-            text = "Testing: Amount + Description + Transaction Type",
+            text = "Testing: Form + ViewModel Integration",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -143,7 +146,50 @@ fun AddTransactionScreen(
         
         Spacer(modifier = Modifier.weight(1f))
         
-        // Test that all form fields work
+        // STEP 4: Test ViewModel integration
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer
+            )
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "ViewModel Test:",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                Text(
+                    text = "Accounts loaded: ${accounts.size}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+                if (accounts.isNotEmpty()) {
+                    accounts.take(3).forEach { account ->
+                        Text(
+                            text = "• ${account.name}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                    if (accounts.size > 3) {
+                        Text(
+                            text = "... and ${accounts.size - 3} more",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "No accounts found",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+        }
+        
+        // Form state display
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
