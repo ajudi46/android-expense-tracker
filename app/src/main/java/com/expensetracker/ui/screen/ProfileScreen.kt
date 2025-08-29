@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -247,6 +248,23 @@ fun ProfileScreen(
                         },
                         enabled = authState.isSignedIn && !authState.isSyncing && !authState.isBackingUp && !authState.isRestoring,
                         showProgress = authState.isSyncing
+                    )
+                    
+                    Divider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                    )
+                    
+                    // Test Firestore Connection (for debugging)
+                    ProfileOption(
+                        icon = Icons.Default.Settings,
+                        title = "Test Firestore Connection",
+                        subtitle = "Debug cloud database connectivity",
+                        onClick = {
+                            authViewModel.testFirestoreConnection()
+                        },
+                        enabled = authState.isSignedIn && !authState.isBackingUp && !authState.isRestoring && !authState.isSyncing && !authState.isLoading,
+                        showProgress = authState.isLoading
                     )
                     
                     Divider(

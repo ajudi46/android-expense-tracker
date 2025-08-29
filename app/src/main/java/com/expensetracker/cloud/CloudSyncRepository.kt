@@ -291,6 +291,57 @@ class CloudSyncRepository @Inject constructor(
         }
     }
     
+    // Test basic Firestore connectivity
+    suspend fun testFirestoreConnection(): Result<String> {
+        return try {
+            val currentUser = authRepository.getCurrentFirebaseUser() ?: throw Exception("User not signed in")
+            
+            android.util.Log.d("CloudSync", "Testing Firestore connection for user: ${currentUser.uid}")
+            android.util.Log.d("CloudSync", "User email: ${currentUser.email}")
+            android.util.Log.d("CloudSync", "User is verified: ${currentUser.isEmailVerified}")
+            
+            // Test basic write operation
+            val testData = mapOf(
+                "test" to "connection",
+                "timestamp" to System.currentTimeMillis(),
+                "userId" to currentUser.uid
+            )
+            
+            val testCollection = "users/${currentUser.uid}/test"
+            android.util.Log.d("CloudSync", "Writing test data to: $testCollection")
+            
+            firestore.collection(testCollection)
+                .document("connection_test")
+                .set(testData)
+                .await()
+            
+            android.util.Log.d("CloudSync", "Test write successful!")
+            
+            // Test basic read operation
+            val readResult = firestore.collection(testCollection)
+                .document("connection_test")
+                .get()
+                .await()
+            
+            if (readResult.exists()) {
+                android.util.Log.d("CloudSync", "Test read successful! Data: ${readResult.data}")
+                
+                // Clean up test document
+                firestore.collection(testCollection)
+                    .document("connection_test")
+                    .delete()
+                    .await()
+                
+                Result.success("Firestore connection successful! User: ${currentUser.email}")
+            } else {
+                throw Exception("Test document was not found after write")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("CloudSync", "Firestore connection test failed: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+    
     // Clear all cloud data for testing purposes
     suspend fun clearAllCloudData(): Result<Unit> {
         return try {

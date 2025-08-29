@@ -362,6 +362,44 @@ class AuthViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(errorMessage = null)
     }
     
+    fun testFirestoreConnection() {
+        if (!_uiState.value.isSignedIn) {
+            _uiState.value = _uiState.value.copy(
+                errorMessage = "Please sign in to test Firestore connection"
+            )
+            return
+        }
+        
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            
+            try {
+                Log.d("ExpenseTracker", "Testing Firestore connection...")
+                
+                val result = cloudSyncRepository.testFirestoreConnection()
+                
+                if (result.isSuccess) {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = "✅ ${result.getOrNull()}"
+                    )
+                    Log.d("ExpenseTracker", "Firestore connection test successful: ${result.getOrNull()}")
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        errorMessage = "❌ Firestore test failed: ${result.exceptionOrNull()?.message}"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "❌ Firestore test failed: ${e.message}"
+                )
+                Log.e("ExpenseTracker", "Firestore connection test failed: ${e.message}", e)
+            }
+        }
+    }
+    
     fun clearCloudData() {
         if (!_uiState.value.isSignedIn) {
             _uiState.value = _uiState.value.copy(
