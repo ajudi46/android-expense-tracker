@@ -35,8 +35,14 @@ data class AuthUiState(
     val hasSkippedLogin: Boolean = false,
     val shouldShowLogin: Boolean = false,
     val lastBackupTime: Long? = null,
-    val lastRestoreTime: Long? = null
+    val lastRestoreTime: Long? = null,
+    val toastMessage: String? = null,
+    val toastType: ToastType = ToastType.INFO
 )
+
+enum class ToastType {
+    SUCCESS, ERROR, INFO, WARNING
+}
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
@@ -231,14 +237,13 @@ class AuthViewModel @Inject constructor(
     
     fun backupDataToCloud() {
         if (!_uiState.value.isSignedIn) {
-            _uiState.value = _uiState.value.copy(
-                errorMessage = "Please sign in to backup data to cloud"
-            )
+            showToast("Please sign in to backup data to cloud", ToastType.WARNING)
             return
         }
         
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isBackingUp = true, errorMessage = null)
+            showToast("Starting backup...", ToastType.INFO)
             
             try {
                 Log.d("ExpenseTracker", "Starting backup operation...")
@@ -252,10 +257,8 @@ class AuthViewModel @Inject constructor(
                 Log.d("ExpenseTracker", "Found ${localAccounts.size} accounts, ${localTransactions.size} transactions to backup")
                 
                 if (localAccounts.isEmpty() && localTransactions.isEmpty()) {
-                    _uiState.value = _uiState.value.copy(
-                        isBackingUp = false,
-                        errorMessage = "No data to backup. Add some accounts and transactions first."
-                    )
+                    _uiState.value = _uiState.value.copy(isBackingUp = false)
+                    showToast("No data to backup. Add some accounts and transactions first.", ToastType.WARNING)
                     return@launch
                 }
                 
@@ -277,25 +280,20 @@ class AuthViewModel @Inject constructor(
                         lastBackupTime = System.currentTimeMillis(),
                         errorMessage = null
                     )
+                    showToast("✅ Backup completed in ${String.format("%.1f", duration)}s! ${localAccounts.size} accounts, ${localTransactions.size} transactions", ToastType.SUCCESS)
                     Log.d("ExpenseTracker", "Backup completed successfully in ${duration}s - ${localAccounts.size} accounts, ${localTransactions.size} transactions")
                 } else {
-                    _uiState.value = _uiState.value.copy(
-                        isBackingUp = false,
-                        errorMessage = "Backup failed: ${result.exceptionOrNull()?.message}"
-                    )
+                    _uiState.value = _uiState.value.copy(isBackingUp = false)
+                    showToast("❌ Backup failed: ${result.exceptionOrNull()?.message}", ToastType.ERROR)
                     Log.e("ExpenseTracker", "Backup failed after ${duration}s: ${result.exceptionOrNull()?.message}")
                 }
             } catch (e: TimeoutCancellationException) {
-                _uiState.value = _uiState.value.copy(
-                    isBackingUp = false,
-                    errorMessage = "Backup timed out. Please check your internet connection and try again."
-                )
+                _uiState.value = _uiState.value.copy(isBackingUp = false)
+                showToast("⏰ Backup timed out. Check your internet connection and try again.", ToastType.ERROR)
                 Log.e("ExpenseTracker", "Backup timed out after 2 minutes")
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isBackingUp = false,
-                    errorMessage = "Backup failed: ${e.message}"
-                )
+                _uiState.value = _uiState.value.copy(isBackingUp = false)
+                showToast("❌ Backup failed: ${e.message}", ToastType.ERROR)
                 Log.e("ExpenseTracker", "Backup failed: ${e.message}", e)
             }
         }
@@ -303,14 +301,13 @@ class AuthViewModel @Inject constructor(
     
     fun restoreDataFromCloud() {
         if (!_uiState.value.isSignedIn) {
-            _uiState.value = _uiState.value.copy(
-                errorMessage = "Please sign in to restore data from cloud"
-            )
+            showToast("Please sign in to restore data from cloud", ToastType.WARNING)
             return
         }
         
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isRestoring = true, errorMessage = null)
+            showToast("Checking cloud data...", ToastType.INFO)
             
             try {
                 Log.d("ExpenseTracker", "Starting cloud restore operation")
@@ -329,14 +326,13 @@ class AuthViewModel @Inject constructor(
                 val transactionCount = cloudTransactions.getOrNull()?.size ?: 0
                 
                 if (accountCount == 0 && transactionCount == 0) {
-                    _uiState.value = _uiState.value.copy(
-                        isRestoring = false,
-                        errorMessage = "No data found in cloud. Please backup your data first, then try restore."
-                    )
+                    _uiState.value = _uiState.value.copy(isRestoring = false)
+                    showToast("📭 No data found in cloud. Please backup your data first.", ToastType.WARNING)
                     return@launch
                 }
                 
                 Log.d("ExpenseTracker", "Found cloud data: $accountCount accounts, $transactionCount transactions")
+                showToast("Restoring $accountCount accounts, $transactionCount transactions...", ToastType.INFO)
                 
                 // Download and merge cloud data
                 restoreAndMergeCloudData()
@@ -347,12 +343,11 @@ class AuthViewModel @Inject constructor(
                     errorMessage = null
                 )
                 
+                showToast("✅ Restore completed! $accountCount accounts, $transactionCount transactions", ToastType.SUCCESS)
                 Log.d("ExpenseTracker", "Restore operation completed successfully")
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isRestoring = false,
-                    errorMessage = "Restore failed: ${e.message}"
-                )
+                _uiState.value = _uiState.value.copy(isRestoring = false)
+                showToast("❌ Restore failed: ${e.message}", ToastType.ERROR)
                 Log.e("ExpenseTracker", "Restore operation failed: ${e.message}", e)
             }
         }
@@ -362,16 +357,26 @@ class AuthViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(errorMessage = null)
     }
     
+    fun showToast(message: String, type: ToastType = ToastType.INFO) {
+        _uiState.value = _uiState.value.copy(
+            toastMessage = message,
+            toastType = type
+        )
+    }
+    
+    fun clearToast() {
+        _uiState.value = _uiState.value.copy(toastMessage = null)
+    }
+    
     fun testFirestoreConnection() {
         if (!_uiState.value.isSignedIn) {
-            _uiState.value = _uiState.value.copy(
-                errorMessage = "Please sign in to test Firestore connection"
-            )
+            showToast("Please sign in to test Firestore connection", ToastType.WARNING)
             return
         }
         
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            showToast("Testing Firestore connection...", ToastType.INFO)
             
             try {
                 Log.d("ExpenseTracker", "Testing Firestore connection...")
@@ -379,22 +384,16 @@ class AuthViewModel @Inject constructor(
                 val result = cloudSyncRepository.testFirestoreConnection()
                 
                 if (result.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = "✅ ${result.getOrNull()}"
-                    )
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                    showToast("✅ Firestore connection successful!", ToastType.SUCCESS)
                     Log.d("ExpenseTracker", "Firestore connection test successful: ${result.getOrNull()}")
                 } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = "❌ Firestore test failed: ${result.exceptionOrNull()?.message}"
-                    )
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                    showToast("❌ Firestore test failed: ${result.exceptionOrNull()?.message}", ToastType.ERROR)
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = "❌ Firestore test failed: ${e.message}"
-                )
+                _uiState.value = _uiState.value.copy(isLoading = false)
+                showToast("❌ Firestore test failed: ${e.message}", ToastType.ERROR)
                 Log.e("ExpenseTracker", "Firestore connection test failed: ${e.message}", e)
             }
         }
@@ -402,14 +401,13 @@ class AuthViewModel @Inject constructor(
     
     fun clearCloudData() {
         if (!_uiState.value.isSignedIn) {
-            _uiState.value = _uiState.value.copy(
-                errorMessage = "Please sign in to clear cloud data"
-            )
+            showToast("Please sign in to clear cloud data", ToastType.WARNING)
             return
         }
         
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            showToast("Clearing cloud data...", ToastType.INFO)
             
             try {
                 Log.d("ExpenseTracker", "Starting to clear cloud data...")
@@ -417,22 +415,16 @@ class AuthViewModel @Inject constructor(
                 val result = cloudSyncRepository.clearAllCloudData()
                 
                 if (result.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = null
-                    )
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                    showToast("🗑️ Cloud data cleared successfully!", ToastType.SUCCESS)
                     Log.d("ExpenseTracker", "Cloud data cleared successfully")
                 } else {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessage = "Failed to clear cloud data: ${result.exceptionOrNull()?.message}"
-                    )
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                    showToast("❌ Failed to clear cloud data: ${result.exceptionOrNull()?.message}", ToastType.ERROR)
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = "Failed to clear cloud data: ${e.message}"
-                )
+                _uiState.value = _uiState.value.copy(isLoading = false)
+                showToast("❌ Failed to clear cloud data: ${e.message}", ToastType.ERROR)
                 Log.e("ExpenseTracker", "Failed to clear cloud data: ${e.message}", e)
             }
         }

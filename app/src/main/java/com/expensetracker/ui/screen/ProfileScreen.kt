@@ -20,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import kotlinx.coroutines.delay
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.expensetracker.ui.viewmodel.AuthViewModel
+import com.expensetracker.ui.viewmodel.ToastType
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -41,6 +43,15 @@ fun ProfileScreen(
 ) {
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
+    
+    // Handle toast messages
+    LaunchedEffect(authState.toastMessage) {
+        authState.toastMessage?.let {
+            // Auto-dismiss toast after 3 seconds
+            delay(3000)
+            authViewModel.clearToast()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -307,6 +318,56 @@ fun ProfileScreen(
                             subtitle = "Sign in to access cloud features",
                             onClick = onNavigateToLogin,
                             enabled = true
+                        )
+                    }
+                }
+            }
+            
+            // Toast message
+            authState.toastMessage?.let { message ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .clickable { authViewModel.clearToast() },
+                    colors = CardDefaults.cardColors(
+                        containerColor = when (authState.toastType) {
+                            ToastType.SUCCESS -> MaterialTheme.colorScheme.primaryContainer
+                            ToastType.ERROR -> MaterialTheme.colorScheme.errorContainer
+                            ToastType.WARNING -> MaterialTheme.colorScheme.tertiaryContainer
+                            ToastType.INFO -> MaterialTheme.colorScheme.secondaryContainer
+                        }
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = when (authState.toastType) {
+                                ToastType.SUCCESS -> MaterialTheme.colorScheme.onPrimaryContainer
+                                ToastType.ERROR -> MaterialTheme.colorScheme.onErrorContainer
+                                ToastType.WARNING -> MaterialTheme.colorScheme.onTertiaryContainer
+                                ToastType.INFO -> MaterialTheme.colorScheme.onSecondaryContainer
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        
+                        Text(
+                            text = "×",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = when (authState.toastType) {
+                                ToastType.SUCCESS -> MaterialTheme.colorScheme.onPrimaryContainer
+                                ToastType.ERROR -> MaterialTheme.colorScheme.onErrorContainer
+                                ToastType.WARNING -> MaterialTheme.colorScheme.onTertiaryContainer
+                                ToastType.INFO -> MaterialTheme.colorScheme.onSecondaryContainer
+                            }.copy(alpha = 0.7f),
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
