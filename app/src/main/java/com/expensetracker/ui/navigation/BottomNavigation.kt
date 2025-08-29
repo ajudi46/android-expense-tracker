@@ -84,6 +84,7 @@ fun ExpenseTrackerBottomNavigation(
     items: List<BottomNavItem> = listOf(
         BottomNavItem.Dashboard,
         BottomNavItem.Accounts,
+        BottomNavItem.AddTransaction,
         BottomNavItem.RecentTransactions,
         BottomNavItem.Budget
     )
@@ -140,8 +141,8 @@ fun ExpenseTrackerBottomNavigation(
         ) {
             Row(
                 modifier = Modifier
-                    .padding(horizontal = 20.dp, vertical = 8.dp), // Better padding for 4 items
-                horizontalArrangement = Arrangement.spacedBy(16.dp), // More spacing for 4 items
+                    .padding(horizontal = 16.dp, vertical = 8.dp), // Adjusted for 5 items
+                horizontalArrangement = Arrangement.spacedBy(12.dp), // Reduced spacing for 5 items
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 items.forEach { item ->
@@ -178,7 +179,7 @@ private fun FloatingNavItem(
     
     Box(
         modifier = Modifier
-            .size(48.dp) // Larger for 4 items
+            .size(44.dp) // Smaller for 5 items
             .clip(CircleShape)
             .background(
                 color = if (isSelected) 
@@ -190,7 +191,7 @@ private fun FloatingNavItem(
                 interactionSource = interactionSource,
                 indication = rememberRipple(
                     bounded = true,
-                    radius = 24.dp, // Adjusted for 4 items
+                    radius = 22.dp, // Adjusted for 5 items
                     color = MaterialTheme.colorScheme.primary
                 ),
                 onClick = onClick
@@ -200,7 +201,7 @@ private fun FloatingNavItem(
         Icon(
             imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
             contentDescription = item.title,
-            modifier = Modifier.size(24.dp), // Larger for 4 items
+            modifier = Modifier.size(22.dp), // Adjusted for 5 items
             tint = if (isSelected) 
                 MaterialTheme.colorScheme.primary 
             else 
