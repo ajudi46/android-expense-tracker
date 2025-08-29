@@ -231,7 +231,8 @@ fun BudgetScreen(
                     BudgetItem(
                         budget = budget,
                         currencyFormatter = currencyFormatter,
-                        onDeleteBudget = { budgetViewModel.deleteBudget(it) }
+                        onDeleteBudget = { budgetViewModel.deleteBudget(it) },
+                        onTestSpending = { budgetViewModel.testUpdateBudgetSpending(it.category, it.month, it.year, it.currentSpent + 25.0) }
                     )
                 }
             }
@@ -254,7 +255,8 @@ fun BudgetScreen(
 fun BudgetItem(
     budget: Budget,
     currencyFormatter: NumberFormat,
-    onDeleteBudget: (Budget) -> Unit
+    onDeleteBudget: (Budget) -> Unit,
+    onTestSpending: (Budget) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -295,6 +297,14 @@ fun BudgetItem(
                             contentDescription = "Delete budget",
                             tint = MaterialTheme.colorScheme.error
                         )
+                    }
+                    
+                    // Test button for debugging progress bar
+                    OutlinedButton(
+                        onClick = { onTestSpending(budget) },
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) {
+                        Text("Test +$25")
                     }
                 }
             }

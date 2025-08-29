@@ -58,6 +58,13 @@ class BudgetViewModel @Inject constructor(
         }
     }
 
+    // Debug function to manually update budget spending for testing
+    fun testUpdateBudgetSpending(category: String, month: Int, year: Int, spentAmount: Double) {
+        viewModelScope.launch {
+            repository.updateBudgetSpent(category, month, year, spentAmount)
+        }
+    }
+
     fun updateBudgetSpent(category: String, newAmount: Double) {
         viewModelScope.launch {
             val calendar = Calendar.getInstance()
