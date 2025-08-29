@@ -53,12 +53,12 @@ fun AddTransactionScreen(
     ) {
         // Header
         Text(
-            text = "Add Transaction - Step 6",
+            text = "Add Transaction - Step 7",
             style = MaterialTheme.typography.headlineLarge
         )
         
         Text(
-            text = "Testing: Form + ViewModel + Dynamic Account Dropdown",
+            text = "Testing: Complete Form + Save Transaction Logic",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -322,13 +322,53 @@ fun AddTransactionScreen(
             }
         }
         
-        Button(
-            onClick = onNavigateBack,
-            modifier = Modifier.fillMaxWidth()
+        // STEP 7: Save Transaction with full validation
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Icon(Icons.Default.ArrowBack, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Go Back")
+            Button(
+                onClick = onNavigateBack,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            ) {
+                Icon(Icons.Default.ArrowBack, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Cancel")
+            }
+            
+            Button(
+                onClick = {
+                    // STEP 7: Test transaction creation logic
+                    val amountValue = amount.toDoubleOrNull()
+                    if (amountValue != null && amountValue > 0 && selectedAccount != null) {
+                        val categoryToUse = if (selectedType == TransactionType.TRANSFER) "Transfer" else selectedCategory
+                        
+                        transactionViewModel.addTransaction(
+                            type = selectedType,
+                            amount = amountValue,
+                            description = description.ifBlank { "${selectedType.name} transaction" },
+                            category = categoryToUse,
+                            fromAccountId = selectedAccount!!.id,
+                            toAccountId = null, // For now, no to-account
+                            date = System.currentTimeMillis()
+                        )
+                        onNavigateBack()
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                enabled = amount.toDoubleOrNull() != null && 
+                          amount.toDoubleOrNull() ?: 0.0 > 0 && 
+                          selectedAccount != null &&
+                          (selectedType == TransactionType.TRANSFER || selectedCategory.isNotBlank())
+            ) {
+                Icon(Icons.Default.Save, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Save")
+            }
         }
     }
 }
