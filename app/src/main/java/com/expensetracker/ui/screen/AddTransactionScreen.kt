@@ -4,10 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -54,15 +51,25 @@ fun AddTransactionScreen(
     
     val dateFormatter = java.text.SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", java.util.Locale.getDefault())
 
+    // Enhanced categories with icons
     val expenseCategories = listOf(
-        "Food & Dining", "Transportation", "Shopping", "Entertainment", "Bills & Utilities",
-        "Healthcare", "Groceries", "Education", "Travel", "Subscriptions", "Insurance",
-        "Fuel", "Home & Garden", "Sports & Fitness", "Beauty & Personal Care", 
-        "Electronics", "Clothing", "Pet Care", "Gifts & Donations", "Business", "Other"
+        "🍽️ Food & Dining", "🚗 Transportation", "🛍️ Shopping", "🎬 Entertainment", 
+        "💡 Bills & Utilities", "🏥 Healthcare", "🛒 Groceries", "📚 Education", 
+        "✈️ Travel", "📱 Subscriptions", "🛡️ Insurance", "⛽ Fuel", 
+        "🏡 Home & Garden", "🏃 Sports & Fitness", "💄 Beauty & Personal Care", 
+        "📱 Electronics", "👕 Clothing", "🐕 Pet Care", "🎁 Gifts & Donations", 
+        "💼 Business", "🏪 Office Supplies", "📋 Maintenance", "🚌 Public Transport",
+        "🍕 Fast Food", "☕ Coffee & Tea", "🍺 Alcohol & Bars", "📚 Books & Media",
+        "🎮 Gaming", "🎵 Music & Apps", "💇 Hair & Salon", "🔧 Repairs",
+        "🏦 Bank Fees", "💳 Credit Card Fees", "📞 Phone Bills", "💻 Internet",
+        "⚡ Electricity", "💧 Water", "🔥 Gas", "🗑️ Waste Management", "Other"
     )
     val incomeCategories = listOf(
-        "Salary", "Freelance", "Investment", "Business", "Gift", "Bonus", 
-        "Rental Income", "Side Hustle", "Dividend", "Interest", "Other"
+        "💰 Salary", "💼 Freelance", "📈 Investment Returns", "🏢 Business Income", 
+        "🏠 Rental Income", "🎉 Bonus", "🎁 Gift Received", "↩️ Refund", 
+        "💸 Interest Earned", "📊 Dividend", "💵 Side Hustle", "🎯 Commission",
+        "📝 Consulting", "🎨 Creative Work", "💡 Royalties", "🏆 Prize Money",
+        "💱 Currency Exchange", "🔄 Cashback", "🎪 Event Income", "Other Income"
     )
 
     val categories = when (selectedType) {
@@ -85,39 +92,150 @@ fun AddTransactionScreen(
             modifier = Modifier.padding(vertical = 8.dp)
         )
         
-        // Transaction Type Selection - M3 Expressive design
+        // Check if accounts exist
+        if (accounts.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AccountBalanceWallet,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No Accounts Found",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Text(
+                        text = "Please add at least one account before creating transactions",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { /* Navigate to accounts */ },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Add Account")
+                    }
+                }
+            }
+            return@Column
+        }
+
+        // Transaction Type Segmented Button
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant
             ),
-            shape = RoundedCornerShape(20.dp) // More rounded for M3 Expressive
+            shape = RoundedCornerShape(16.dp)
         ) {
             Column(
-                modifier = Modifier.padding(24.dp) // Increased padding for M3 Expressive
+                modifier = Modifier.padding(16.dp)
             ) {
                 Text(
                     text = "Transaction Type",
-                    style = MaterialTheme.typography.titleLarge, // Larger typography for M3 Expressive
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 12.dp)
                 )
                 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    TransactionType.values().forEach { type ->
-                        TransactionTypeChip(
-                            type = type,
-                            isSelected = selectedType == type,
-                            onClick = { selectedType = it },
-                            modifier = Modifier.weight(1f)
+                    // Expense Button
+                    Button(
+                        onClick = { selectedType = TransactionType.EXPENSE },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selectedType == TransactionType.EXPENSE) 
+                                MaterialTheme.colorScheme.primary 
+                            else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (selectedType == TransactionType.EXPENSE) 
+                                MaterialTheme.colorScheme.onPrimary 
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.TrendingDown,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Expense")
+                    }
+                    
+                    // Income Button
+                    Button(
+                        onClick = { selectedType = TransactionType.INCOME },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selectedType == TransactionType.INCOME) 
+                                MaterialTheme.colorScheme.primary 
+                            else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (selectedType == TransactionType.INCOME) 
+                                MaterialTheme.colorScheme.onPrimary 
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.TrendingUp,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Income")
+                    }
+                    
+                    // Transfer Button
+                    Button(
+                        onClick = { selectedType = TransactionType.TRANSFER },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selectedType == TransactionType.TRANSFER) 
+                                MaterialTheme.colorScheme.primary 
+                            else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (selectedType == TransactionType.TRANSFER) 
+                                MaterialTheme.colorScheme.onPrimary 
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SwapHoriz,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Transfer")
                     }
                 }
             }
         }
+        
+
 
         // Amount Input
         OutlinedTextField(
@@ -129,13 +247,14 @@ fun AddTransactionScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Description Input
+        // Description Input (Optional)
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
-            label = { Text("Description") },
-            leadingIcon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null) },
-            modifier = Modifier.fillMaxWidth()
+            label = { Text("Description (Optional)") },
+            leadingIcon = { Icon(Icons.Default.Description, contentDescription = null) },
+            modifier = Modifier.fillMaxWidth(),
+            supportingText = { Text("Add a note about this transaction") }
         )
 
         // Date Selection
@@ -277,14 +396,21 @@ fun AddTransactionScreen(
         Button(
             onClick = {
                 val amountValue = amount.toDoubleOrNull() ?: 0.0
-                if (amountValue > 0 && description.isNotBlank() && selectedFromAccount != null) {
+                if (amountValue > 0 && selectedFromAccount != null) {
                     val categoryToUse = if (selectedType == TransactionType.TRANSFER) "Transfer" else selectedCategory
+                    
+                    // Strip emoji from category for database storage
+                    val cleanCategory = if (categoryToUse.contains(" ")) {
+                        categoryToUse.substringAfter(" ")
+                    } else {
+                        categoryToUse
+                    }
                     
                     transactionViewModel.addTransaction(
                         type = selectedType,
                         amount = amountValue,
-                        description = description,
-                        category = categoryToUse,
+                        description = description.ifBlank { "${selectedType.name} transaction" },
+                        category = cleanCategory,
                         fromAccountId = selectedFromAccount!!.id,
                         toAccountId = selectedToAccount?.id,
                         date = selectedDate
@@ -295,7 +421,6 @@ fun AddTransactionScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = amount.toDoubleOrNull() != null && 
                       amount.toDoubleOrNull() ?: 0.0 > 0 && 
-                      description.isNotBlank() && 
                       selectedFromAccount != null &&
                       (selectedType == TransactionType.TRANSFER || selectedCategory.isNotBlank()) &&
                       (selectedType != TransactionType.TRANSFER || selectedToAccount != null)
@@ -304,6 +429,51 @@ fun AddTransactionScreen(
             Spacer(modifier = Modifier.width(8.dp))
             Text(stringResource(R.string.save))
         }
+    }
+    
+    // Material 3 Date Picker Dialog
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = selectedDate
+        )
+        
+        DatePickerDialog(
+            onDateSelected = { dateMillis ->
+                dateMillis?.let { selectedDate = it }
+                showDatePicker = false
+            },
+            onDismiss = { showDatePicker = false }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DatePickerDialog(
+    onDateSelected: (Long?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val datePickerState = rememberDatePickerState()
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = {
+                onDateSelected(datePickerState.selectedDateMillis)
+            }) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    ) {
+        DatePicker(
+            state = datePickerState,
+            showModeToggle = true
+        )
     }
 }
 

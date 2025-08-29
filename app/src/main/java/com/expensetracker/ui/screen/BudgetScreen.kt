@@ -374,10 +374,16 @@ fun AddBudgetDialog(
     var showCategoryDropdown by remember { mutableStateOf(false) }
     
     val expenseCategories = listOf(
-        "Food & Dining", "Transportation", "Shopping", "Entertainment", "Bills & Utilities",
-        "Healthcare", "Groceries", "Education", "Travel", "Subscriptions", "Insurance",
-        "Fuel", "Home & Garden", "Sports & Fitness", "Beauty & Personal Care", 
-        "Electronics", "Clothing", "Pet Care", "Gifts & Donations", "Business", "Other"
+        "🍽️ Food & Dining", "🚗 Transportation", "🛍️ Shopping", "🎬 Entertainment", 
+        "💡 Bills & Utilities", "🏥 Healthcare", "🛒 Groceries", "📚 Education", 
+        "✈️ Travel", "📱 Subscriptions", "🛡️ Insurance", "⛽ Fuel", 
+        "🏡 Home & Garden", "🏃 Sports & Fitness", "💄 Beauty & Personal Care", 
+        "📱 Electronics", "👕 Clothing", "🐕 Pet Care", "🎁 Gifts & Donations", 
+        "💼 Business", "🏪 Office Supplies", "📋 Maintenance", "🚌 Public Transport",
+        "🍕 Fast Food", "☕ Coffee & Tea", "🍺 Alcohol & Bars", "📚 Books & Media",
+        "🎮 Gaming", "🎵 Music & Apps", "💇 Hair & Salon", "🔧 Repairs",
+        "🏦 Bank Fees", "💳 Credit Card Fees", "📞 Phone Bills", "💻 Internet",
+        "⚡ Electricity", "💧 Water", "🔥 Gas", "🗑️ Waste Management", "Other"
     )
 
     AlertDialog(
@@ -441,7 +447,13 @@ fun AddBudgetDialog(
                 onClick = {
                     val amount = budgetAmount.toDoubleOrNull()
                     if (selectedCategory.isNotBlank() && amount != null && amount > 0) {
-                        onBudgetAdded(selectedCategory, amount)
+                                                    // Strip emoji from category before saving
+                            val cleanCategory = if (selectedCategory.contains(" ")) {
+                                selectedCategory.substringAfter(" ")
+                            } else {
+                                selectedCategory
+                            }
+                            onBudgetAdded(cleanCategory, amount)
                     }
                 },
                 enabled = selectedCategory.isNotBlank() && budgetAmount.toDoubleOrNull() != null && (budgetAmount.toDoubleOrNull() ?: 0.0) > 0
