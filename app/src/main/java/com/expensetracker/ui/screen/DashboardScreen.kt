@@ -86,12 +86,11 @@ fun DashboardScreen(
             .fillMaxSize()
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(bottom = 100.dp) // Space for floating nav
+        contentPadding = PaddingValues(top = 56.dp, bottom = 100.dp) // Space for status bar + floating nav
     ) {
         // Header
         item {
             Column {
-                Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "Dashboard",
                     style = MaterialTheme.typography.headlineLarge,

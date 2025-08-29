@@ -56,7 +56,7 @@ fun RecentTransactionsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp) // Space for floating nav
+            .padding(start = 16.dp, end = 16.dp, top = 56.dp, bottom = 100.dp) // Space for status bar + floating nav
     ) {
         // Header
         Text(

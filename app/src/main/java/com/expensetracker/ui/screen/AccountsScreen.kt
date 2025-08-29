@@ -71,12 +71,11 @@ fun AccountsScreen(
             .fillMaxSize()
             .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(bottom = 100.dp) // Space for floating nav
+        contentPadding = PaddingValues(top = 56.dp, bottom = 100.dp) // Space for status bar + floating nav
     ) {
         // Header with Add Account button
         item {
             Column {
-                Spacer(modifier = Modifier.height(16.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
