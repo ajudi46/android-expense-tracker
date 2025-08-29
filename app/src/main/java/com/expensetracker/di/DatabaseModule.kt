@@ -6,6 +6,7 @@ import com.expensetracker.data.dao.AccountDao
 import com.expensetracker.data.dao.BudgetDao
 import com.expensetracker.data.dao.CategoryDao
 import com.expensetracker.data.dao.TransactionDao
+import com.expensetracker.data.dao.UserDao
 import com.expensetracker.data.database.ExpenseDatabase
 import dagger.Module
 import dagger.Provides
@@ -42,5 +43,10 @@ object DatabaseModule {
     @Provides
     fun provideBudgetDao(database: ExpenseDatabase): BudgetDao {
         return database.budgetDao()
+    }
+
+    @Provides
+    fun provideUserDao(database: ExpenseDatabase): UserDao {
+        return database.userDao()
     }
 }

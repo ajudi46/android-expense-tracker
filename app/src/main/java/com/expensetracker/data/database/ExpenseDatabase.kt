@@ -11,14 +11,16 @@ import com.expensetracker.data.dao.AccountDao
 import com.expensetracker.data.dao.BudgetDao
 import com.expensetracker.data.dao.CategoryDao
 import com.expensetracker.data.dao.TransactionDao
+import com.expensetracker.data.dao.UserDao
 import com.expensetracker.data.model.Account
 import com.expensetracker.data.model.Budget
 import com.expensetracker.data.model.Category
 import com.expensetracker.data.model.Transaction
+import com.expensetracker.data.model.User
 
 @Database(
-    entities = [Account::class, Transaction::class, Category::class, Budget::class],
-    version = 2,
+    entities = [Account::class, Transaction::class, Category::class, Budget::class, User::class],
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -27,6 +29,7 @@ abstract class ExpenseDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
     abstract fun categoryDao(): CategoryDao
     abstract fun budgetDao(): BudgetDao
+    abstract fun userDao(): UserDao
 
     companion object {
         @Volatile
@@ -50,6 +53,24 @@ abstract class ExpenseDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS users (
+                        uid TEXT PRIMARY KEY NOT NULL,
+                        email TEXT NOT NULL,
+                        displayName TEXT,
+                        photoUrl TEXT,
+                        isSignedIn INTEGER NOT NULL DEFAULT 0,
+                        lastSyncTimestamp INTEGER NOT NULL DEFAULT 0,
+                        encryptionKey TEXT
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
         fun getDatabase(context: Context): ExpenseDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -57,7 +78,7 @@ abstract class ExpenseDatabase : RoomDatabase() {
                     ExpenseDatabase::class.java,
                     "expense_database"
                 )
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
                 INSTANCE = instance
                 instance

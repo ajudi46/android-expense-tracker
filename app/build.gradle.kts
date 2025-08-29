@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -87,6 +88,21 @@ dependencies {
     
     // Icons
     implementation("androidx.compose.material:material-icons-extended:1.5.4")
+    
+    // Firebase & Google Sign-In
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+    
+    // Encryption
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    
+    // DataStore for encrypted preferences
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    
+    // JSON parsing
+    implementation("com.google.code.gson:gson:2.10.1")
     
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
