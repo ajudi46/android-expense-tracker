@@ -1,13 +1,16 @@
 package com.expensetracker.data.repository
 
 import com.expensetracker.data.dao.AccountDao
+import com.expensetracker.data.dao.BudgetDao
 import com.expensetracker.data.dao.CategoryDao
 import com.expensetracker.data.dao.TransactionDao
 import com.expensetracker.data.model.Account
+import com.expensetracker.data.model.Budget
 import com.expensetracker.data.model.Category
 import com.expensetracker.data.model.Transaction
 import com.expensetracker.data.model.TransactionType
 import kotlinx.coroutines.flow.Flow
+import java.util.Calendar
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,7 +18,8 @@ import javax.inject.Singleton
 class ExpenseRepository @Inject constructor(
     private val accountDao: AccountDao,
     private val transactionDao: TransactionDao,
-    private val categoryDao: CategoryDao
+    private val categoryDao: CategoryDao,
+    private val budgetDao: BudgetDao
 ) {
     // Account operations
     fun getAllAccounts(): Flow<List<Account>> = accountDao.getAllAccounts()
@@ -63,4 +67,26 @@ class ExpenseRepository @Inject constructor(
     suspend fun insertCategory(category: Category): Long = categoryDao.insertCategory(category)
     suspend fun updateCategory(category: Category) = categoryDao.updateCategory(category)
     suspend fun deleteCategory(category: Category) = categoryDao.deleteCategory(category)
+
+    // Budget operations
+    fun getAllBudgets(): Flow<List<Budget>> = budgetDao.getAllBudgets()
+    
+    fun getCurrentMonthBudgets(): Flow<List<Budget>> {
+        val calendar = Calendar.getInstance()
+        return budgetDao.getBudgetsForMonth(
+            calendar.get(Calendar.MONTH) + 1, // Calendar.MONTH is 0-based
+            calendar.get(Calendar.YEAR)
+        )
+    }
+    
+    suspend fun getBudgetForCategory(category: String, month: Int, year: Int): Budget? = 
+        budgetDao.getBudgetForCategory(category, month, year)
+    
+    suspend fun insertBudget(budget: Budget): Long = budgetDao.insertBudget(budget)
+    suspend fun updateBudget(budget: Budget) = budgetDao.updateBudget(budget)
+    suspend fun deleteBudget(budget: Budget) = budgetDao.deleteBudget(budget)
+    
+    suspend fun updateBudgetSpent(category: String, month: Int, year: Int, newAmount: Double) {
+        budgetDao.updateBudgetSpent(category, month, year, newAmount)
+    }
 }

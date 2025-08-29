@@ -109,7 +109,7 @@ fun ExpenseTrackerBottomNavigation(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+            .padding(start = 16.dp, end = 16.dp, bottom = 32.dp), // Moved up with more bottom padding
         contentAlignment = Alignment.Center
     ) {
         Surface(

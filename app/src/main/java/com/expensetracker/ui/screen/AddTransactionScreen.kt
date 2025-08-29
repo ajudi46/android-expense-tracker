@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -46,9 +47,23 @@ fun AddTransactionScreen(
     var showFromAccountDropdown by remember { mutableStateOf(false) }
     var showToAccountDropdown by remember { mutableStateOf(false) }
     var showCategoryDropdown by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    
+    // Transaction date (default to current date/time)
+    var selectedDate by remember { mutableStateOf(System.currentTimeMillis()) }
+    
+    val dateFormatter = java.text.SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", java.util.Locale.getDefault())
 
-    val expenseCategories = listOf("Food", "Transportation", "Shopping", "Entertainment", "Bills", "Healthcare", "Other")
-    val incomeCategories = listOf("Salary", "Freelance", "Investment", "Gift", "Bonus", "Other")
+    val expenseCategories = listOf(
+        "Food & Dining", "Transportation", "Shopping", "Entertainment", "Bills & Utilities",
+        "Healthcare", "Groceries", "Education", "Travel", "Subscriptions", "Insurance",
+        "Fuel", "Home & Garden", "Sports & Fitness", "Beauty & Personal Care", 
+        "Electronics", "Clothing", "Pet Care", "Gifts & Donations", "Business", "Other"
+    )
+    val incomeCategories = listOf(
+        "Salary", "Freelance", "Investment", "Business", "Gift", "Bonus", 
+        "Rental Income", "Side Hustle", "Dividend", "Interest", "Other"
+    )
 
     val categories = when (selectedType) {
         TransactionType.EXPENSE -> expenseCategories
@@ -120,6 +135,21 @@ fun AddTransactionScreen(
             onValueChange = { description = it },
             label = { Text("Description") },
             leadingIcon = { Icon(Icons.Default.AccountBalanceWallet, contentDescription = null) },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Date Selection
+        OutlinedTextField(
+            value = dateFormatter.format(java.util.Date(selectedDate)),
+            onValueChange = { },
+            readOnly = true,
+            label = { Text("Date & Time") },
+            leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+            trailingIcon = {
+                IconButton(onClick = { showDatePicker = true }) {
+                    Icon(Icons.Default.CalendarToday, contentDescription = "Select Date")
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -256,7 +286,8 @@ fun AddTransactionScreen(
                         description = description,
                         category = categoryToUse,
                         fromAccountId = selectedFromAccount!!.id,
-                        toAccountId = selectedToAccount?.id
+                        toAccountId = selectedToAccount?.id,
+                        date = selectedDate
                     )
                     onNavigateBack()
                 }

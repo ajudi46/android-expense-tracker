@@ -29,7 +29,8 @@ class TransactionViewModel @Inject constructor(
         description: String,
         category: String,
         fromAccountId: Long,
-        toAccountId: Long? = null
+        toAccountId: Long? = null,
+        date: Long = System.currentTimeMillis()
     ) {
         viewModelScope.launch {
             val transaction = Transaction(
@@ -38,7 +39,8 @@ class TransactionViewModel @Inject constructor(
                 description = description,
                 category = category,
                 fromAccountId = fromAccountId,
-                toAccountId = toAccountId
+                toAccountId = toAccountId,
+                createdAt = date
             )
             repository.insertTransaction(transaction)
         }
