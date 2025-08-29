@@ -17,6 +17,8 @@ class BudgetViewModel @Inject constructor(
     val currentMonthBudgets = repository.getCurrentMonthBudgets()
     val allBudgets = repository.getAllBudgets()
 
+    fun getBudgetsForMonth(month: Int, year: Int) = repository.getBudgetsForMonth(month, year)
+
     fun addBudget(category: String, limitAmount: Double) {
         viewModelScope.launch {
             val calendar = Calendar.getInstance()
@@ -26,6 +28,19 @@ class BudgetViewModel @Inject constructor(
                 currentSpent = 0.0,
                 month = calendar.get(Calendar.MONTH) + 1, // Calendar.MONTH is 0-based
                 year = calendar.get(Calendar.YEAR)
+            )
+            repository.insertBudget(budget)
+        }
+    }
+
+    fun addBudgetForMonth(category: String, limitAmount: Double, month: Int, year: Int) {
+        viewModelScope.launch {
+            val budget = Budget(
+                category = category,
+                limitAmount = limitAmount,
+                currentSpent = 0.0,
+                month = month,
+                year = year
             )
             repository.insertBudget(budget)
         }

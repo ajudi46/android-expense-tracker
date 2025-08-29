@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.Warning
@@ -29,10 +31,21 @@ fun BudgetScreen(
     onScrollDirectionChanged: (Boolean) -> Unit = {},
     budgetViewModel: BudgetViewModel = hiltViewModel()
 ) {
-    val budgets by budgetViewModel.currentMonthBudgets.collectAsStateWithLifecycle(initialValue = emptyList())
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.getDefault())
     
+    // Month navigation state
+    var currentMonth by remember { mutableStateOf(Calendar.getInstance().get(Calendar.MONTH) + 1) }
+    var currentYear by remember { mutableStateOf(Calendar.getInstance().get(Calendar.YEAR)) }
+    
+    // Get budgets for selected month
+    val budgets by budgetViewModel.getBudgetsForMonth(currentMonth, currentYear).collectAsStateWithLifecycle(initialValue = emptyList())
+    
     var showAddBudgetDialog by remember { mutableStateOf(false) }
+    
+    val monthNames = listOf(
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    )
 
     Column(
         modifier = Modifier
@@ -40,34 +53,98 @@ fun BudgetScreen(
             .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp) // Space for floating nav
     ) {
         // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Budget Management",
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            
-            FilledTonalButton(
-                onClick = { showAddBudgetDialog = true },
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                Text(
+                    text = "Budget Management",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Add Budget")
+                
+                FilledTonalButton(
+                    onClick = { showAddBudgetDialog = true },
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    modifier = Modifier.padding(start = 8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Add Budget")
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Month Navigation
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            ),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = {
+                        if (currentMonth == 1) {
+                            currentMonth = 12
+                            currentYear -= 1
+                        } else {
+                            currentMonth -= 1
+                        }
+                    }
+                ) {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Previous Month",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+                
+                Text(
+                    text = "${monthNames[currentMonth - 1]} $currentYear",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                
+                IconButton(
+                    onClick = {
+                        if (currentMonth == 12) {
+                            currentMonth = 1
+                            currentYear += 1
+                        } else {
+                            currentMonth += 1
+                        }
+                    }
+                ) {
+                    Icon(
+                        Icons.Default.ArrowForward,
+                        contentDescription = "Next Month",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
 
         // Budget Summary Card
         Card(
@@ -199,7 +276,7 @@ fun BudgetScreen(
         AddBudgetDialog(
             onDismiss = { showAddBudgetDialog = false },
             onBudgetAdded = { category, amount ->
-                budgetViewModel.addBudget(category, amount)
+                budgetViewModel.addBudgetForMonth(category, amount, currentMonth, currentYear)
                 showAddBudgetDialog = false
             }
         )

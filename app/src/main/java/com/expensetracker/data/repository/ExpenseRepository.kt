@@ -42,6 +42,8 @@ class ExpenseRepository @Inject constructor(
         when (transaction.type) {
             TransactionType.EXPENSE -> {
                 accountDao.updateBalance(transaction.fromAccountId, -transaction.amount)
+                // Update budget for expense transactions
+                updateBudgetSpending(transaction)
             }
             TransactionType.INCOME -> {
                 accountDao.updateBalance(transaction.fromAccountId, transaction.amount)
@@ -55,6 +57,22 @@ class ExpenseRepository @Inject constructor(
         }
         
         return transactionId
+    }
+    
+    private suspend fun updateBudgetSpending(transaction: Transaction) {
+        if (transaction.type == TransactionType.EXPENSE) {
+            val calendar = Calendar.getInstance()
+            calendar.timeInMillis = transaction.createdAt
+            val month = calendar.get(Calendar.MONTH) + 1
+            val year = calendar.get(Calendar.YEAR)
+            
+            // Check if budget exists for this category in this month
+            val existingBudget = getBudgetForCategory(transaction.category, month, year)
+            existingBudget?.let { budget ->
+                val newSpentAmount = budget.currentSpent + transaction.amount
+                updateBudgetSpent(transaction.category, month, year, newSpentAmount)
+            }
+        }
     }
     
     suspend fun updateTransaction(transaction: Transaction) = transactionDao.updateTransaction(transaction)
@@ -78,6 +96,9 @@ class ExpenseRepository @Inject constructor(
             calendar.get(Calendar.YEAR)
         )
     }
+    
+    fun getBudgetsForMonth(month: Int, year: Int): Flow<List<Budget>> = 
+        budgetDao.getBudgetsForMonth(month, year)
     
     suspend fun getBudgetForCategory(category: String, month: Int, year: Int): Budget? = 
         budgetDao.getBudgetForCategory(category, month, year)

@@ -26,4 +26,21 @@ interface TransactionDao {
 
     @Query("SELECT * FROM transactions ORDER BY createdAt DESC LIMIT :limit")
     fun getRecentTransactions(limit: Int): Flow<List<Transaction>>
+
+    @Query("""
+        SELECT * FROM transactions 
+        WHERE strftime('%m', datetime(createdAt / 1000, 'unixepoch')) = printf('%02d', :month)
+        AND strftime('%Y', datetime(createdAt / 1000, 'unixepoch')) = :year
+        ORDER BY createdAt DESC
+    """)
+    fun getTransactionsForMonth(month: Int, year: String): Flow<List<Transaction>>
+
+    @Query("""
+        SELECT * FROM transactions 
+        WHERE category = :category
+        AND strftime('%m', datetime(createdAt / 1000, 'unixepoch')) = printf('%02d', :month)
+        AND strftime('%Y', datetime(createdAt / 1000, 'unixepoch')) = :year
+        ORDER BY createdAt DESC
+    """)
+    fun getTransactionsForCategoryAndMonth(category: String, month: Int, year: String): Flow<List<Transaction>>
 }
