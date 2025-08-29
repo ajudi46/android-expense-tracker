@@ -2,6 +2,8 @@ package com.expensetracker.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.expensetracker.auth.AuthenticationRepository
+import com.expensetracker.cloud.CloudSyncRepository
 import com.expensetracker.data.model.Transaction
 import com.expensetracker.data.model.TransactionType
 import com.expensetracker.data.repository.ExpenseRepository
@@ -9,12 +11,15 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class TransactionViewModel @Inject constructor(
-    private val repository: ExpenseRepository
+    private val repository: ExpenseRepository,
+    private val authRepository: AuthenticationRepository,
+    private val cloudSyncRepository: CloudSyncRepository
 ) : ViewModel() {
 
     val allTransactions = repository.getAllTransactions()
@@ -45,19 +50,41 @@ class TransactionViewModel @Inject constructor(
                 toAccountId = toAccountId,
                 createdAt = date
             )
-            repository.insertTransaction(transaction)
+            
+            // Insert transaction locally
+            val transactionId = repository.insertTransaction(transaction)
+            
+            // Auto-backup to cloud if user is signed in
+            backupTransactionToCloud(transaction.copy(id = transactionId))
+        }
+    }
+    
+    private fun backupTransactionToCloud(transaction: Transaction) {
+        viewModelScope.launch {
+            try {
+                val isSignedIn = authRepository.isSignedIn.firstOrNull() ?: false
+                if (isSignedIn) {
+                    cloudSyncRepository.syncTransactionsToCloud(listOf(transaction))
+                }
+            } catch (e: Exception) {
+                // Handle backup error silently - transaction is still saved locally
+            }
         }
     }
 
     fun updateTransaction(transaction: Transaction) {
         viewModelScope.launch {
             repository.updateTransaction(transaction)
+            // Auto-backup updated transaction to cloud
+            backupTransactionToCloud(transaction)
         }
     }
 
     fun deleteTransaction(transaction: Transaction) {
         viewModelScope.launch {
             repository.deleteTransaction(transaction)
+            // Note: For deletion, we could implement a "deleted" flag instead of actual deletion
+            // to sync deletions across devices, but for simplicity, we'll just delete locally
         }
     }
 

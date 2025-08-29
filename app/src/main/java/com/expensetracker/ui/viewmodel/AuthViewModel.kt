@@ -125,18 +125,25 @@ class AuthViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isSyncing = true, isLoading = false)
             
             try {
+                // First, try to restore data from cloud
+                cloudSyncRepository.syncAccountsFromCloud()
+                cloudSyncRepository.syncTransactionsFromCloud()
+                cloudSyncRepository.syncCategoriesFromCloud()
+                cloudSyncRepository.syncBudgetsFromCloud()
+                
+                // Mark full sync as complete
                 val result = cloudSyncRepository.performFullSync()
                 
                 _uiState.value = _uiState.value.copy(
                     isSyncing = false,
                     errorMessage = if (result.isFailure) {
-                        "Sync failed: ${result.exceptionOrNull()?.message}"
+                        "Sync completed with some issues: ${result.exceptionOrNull()?.message}"
                     } else null
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isSyncing = false,
-                    errorMessage = "Sync failed: ${e.message}"
+                    errorMessage = "Initial sync failed: ${e.message}"
                 )
             }
         }
