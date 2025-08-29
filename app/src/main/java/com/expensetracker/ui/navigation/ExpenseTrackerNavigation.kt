@@ -18,6 +18,7 @@ import com.expensetracker.ui.screen.AccountsScreen
 import com.expensetracker.ui.screen.AddTransactionScreen
 import com.expensetracker.ui.screen.BudgetScreen
 import com.expensetracker.ui.screen.DashboardScreen
+import com.expensetracker.ui.screen.ProfileScreen
 import com.expensetracker.ui.screen.RecentTransactionsScreen
 import com.expensetracker.ui.screen.SignInScreen
 import com.expensetracker.ui.viewmodel.AuthViewModel
@@ -63,6 +64,9 @@ fun ExpenseTrackerNavigation(
                     onNavigateToAddTransaction = {
                         navController.navigate(Screen.AddTransaction.route)
                     },
+                    onNavigateToProfile = {
+                        navController.navigate(Screen.Profile.route)
+                    },
                     onScrollDirectionChanged = { visible ->
                         isBottomNavVisible = visible
                     }
@@ -106,6 +110,15 @@ fun ExpenseTrackerNavigation(
                     }
                 )
             }
+
+            composable(Screen.Profile.route) {
+                ProfileScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    authViewModel = authViewModel
+                )
+            }
         }
         
         // Floating bottom navigation (only show when signed in)
@@ -131,4 +144,5 @@ sealed class Screen(val route: String) {
     object AddTransaction : Screen("add_transaction")
     object RecentTransactions : Screen("recent_transactions")
     object Budget : Screen("budget")
+    object Profile : Screen("profile")
 }

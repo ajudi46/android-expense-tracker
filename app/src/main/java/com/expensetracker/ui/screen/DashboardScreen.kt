@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -44,6 +45,7 @@ import java.util.*
 fun DashboardScreen(
     onNavigateToAccounts: () -> Unit,
     onNavigateToAddTransaction: () -> Unit,
+    onNavigateToProfile: () -> Unit,
     onScrollDirectionChanged: (Boolean) -> Unit = {},
     accountViewModel: AccountViewModel = hiltViewModel(),
     transactionViewModel: TransactionViewModel = hiltViewModel()
@@ -80,14 +82,41 @@ fun DashboardScreen(
         }
     }
 
-    LazyColumn(
-        state = listState,
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(top = 56.dp, bottom = 100.dp) // Space for status bar + floating nav
-    ) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Expense Tracker",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                actions = {
+                    IconButton(onClick = onNavigateToProfile) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Profile",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
+        }
+    ) { paddingValues ->
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(bottom = 100.dp) // Space for floating nav
+        ) {
         // Header
         item {
             Column {
@@ -208,6 +237,7 @@ fun DashboardScreen(
 
         item {
             Spacer(modifier = Modifier.height(16.dp)) // Bottom padding
+        }
         }
     }
 }

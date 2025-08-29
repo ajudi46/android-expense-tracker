@@ -18,6 +18,7 @@ data class AuthUiState(
     val isLoading: Boolean = false,
     val isSignedIn: Boolean = false,
     val user: UserProfile? = null,
+    val userEmail: String? = null,
     val errorMessage: String? = null,
     val isSyncing: Boolean = false
 )
@@ -43,7 +44,8 @@ class AuthViewModel @Inject constructor(
             ) { isSignedIn, user ->
                 _uiState.value = _uiState.value.copy(
                     isSignedIn = isSignedIn,
-                    user = user
+                    user = user,
+                    userEmail = user?.email
                 )
             }.collect()
         }
@@ -121,7 +123,7 @@ class AuthViewModel @Inject constructor(
         }
     }
     
-    private fun performInitialSync() {
+    fun performInitialSync() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSyncing = true, isLoading = false)
             
