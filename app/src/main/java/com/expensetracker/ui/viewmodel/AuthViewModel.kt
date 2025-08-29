@@ -471,6 +471,7 @@ class AuthViewModel @Inject constructor(
                     name = "Test Account", 
                     iconName = "test_icon",
                     balance = 1234.56, // Test with decimal balance
+                    initialBalance = 1000.00, // Test with different initial balance
                     createdAt = System.currentTimeMillis()
                 )
                 
@@ -482,7 +483,7 @@ class AuthViewModel @Inject constructor(
                 
                 Log.d("ExpenseTracker", "Decrypted account: ${decryptedAccount.name}, balance: ${decryptedAccount.balance}")
                 
-                if (testAccount.balance == decryptedAccount.balance) {
+                if (testAccount.balance == decryptedAccount.balance && testAccount.initialBalance == decryptedAccount.initialBalance) {
                     Log.d("ExpenseTracker", "Local encryption/decryption test PASSED")
                     
                     // Now test cloud round-trip
@@ -490,7 +491,7 @@ class AuthViewModel @Inject constructor(
                     
                     if (result.isSuccess) {
                         _uiState.value = _uiState.value.copy(isLoading = false)
-                        showToast("✅ Encryption test passed! Balance: ${testAccount.balance} → ${decryptedAccount.balance}", ToastType.SUCCESS)
+                        showToast("✅ Encryption test passed! Balance: ${testAccount.balance} → ${decryptedAccount.balance}, Initial: ${testAccount.initialBalance} → ${decryptedAccount.initialBalance}", ToastType.SUCCESS)
                         Log.d("ExpenseTracker", "Encryption test successful: ${result.getOrNull()}")
                     } else {
                         _uiState.value = _uiState.value.copy(isLoading = false)
@@ -498,7 +499,7 @@ class AuthViewModel @Inject constructor(
                     }
                 } else {
                     _uiState.value = _uiState.value.copy(isLoading = false)
-                    showToast("❌ Local encryption test failed: ${testAccount.balance} ≠ ${decryptedAccount.balance}", ToastType.ERROR)
+                    showToast("❌ Local encryption test failed: Balance ${testAccount.balance} ≠ ${decryptedAccount.balance} or Initial ${testAccount.initialBalance} ≠ ${decryptedAccount.initialBalance}", ToastType.ERROR)
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false)

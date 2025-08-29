@@ -285,15 +285,19 @@ class ExpenseRepository @Inject constructor(
                     }
                 }
                 
-                // Step 2: The correct balance = stored balance (which should already include initial + transactions)
-                // But if there's inconsistency due to encryption/sync issues, we log it
-                val expectedBalance = account.balance
+                // Step 2: Calculate correct balance = initial balance + transaction effects
+                val correctBalance = account.initialBalance + transactionEffect
                 
-                android.util.Log.d("ExpenseRepository", "Account ${account.name}: current_balance=${account.balance}, transaction_effect=${transactionEffect}")
+                android.util.Log.d("ExpenseRepository", "Account ${account.name}: initial=${account.initialBalance}, transaction_effect=${transactionEffect}, current=${account.balance}, correct=${correctBalance}")
                 
-                // For now, we trust the account balance from the cloud since it should include the initial balance
-                // If you're still seeing issues, the problem might be in the encryption/decryption of the balance field
-                android.util.Log.d("ExpenseRepository", "Account ${account.name}: keeping balance as ${account.balance}")
+                // Update account if balance is incorrect
+                if (account.balance != correctBalance) {
+                    android.util.Log.d("ExpenseRepository", "Correcting balance for ${account.name}: ${account.balance} → ${correctBalance}")
+                    val correctedAccount = account.copy(balance = correctBalance)
+                    accountDao.updateAccount(correctedAccount)
+                } else {
+                    android.util.Log.d("ExpenseRepository", "Account ${account.name} balance is correct")
+                }
             }
             
             android.util.Log.d("ExpenseRepository", "Balance recalculation completed successfully")

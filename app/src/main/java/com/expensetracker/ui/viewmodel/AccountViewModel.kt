@@ -27,7 +27,8 @@ class AccountViewModel @Inject constructor(
             val account = Account(
                 name = name,
                 iconName = iconName,
-                balance = initialBalance
+                balance = initialBalance,
+                initialBalance = initialBalance
             )
             repository.insertAccount(account)
         }

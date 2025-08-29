@@ -10,5 +10,6 @@ data class Account(
     val name: String,
     val iconName: String,
     val balance: Double,
+    val initialBalance: Double = balance, // Store the original initial balance separately
     val createdAt: Long = System.currentTimeMillis()
 )

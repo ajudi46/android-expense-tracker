@@ -184,7 +184,9 @@ fun AccountsScreen(
                         uiState.selectedAccount!!.copy(
                             name = name,
                             iconName = iconName,
-                            balance = balance
+                            balance = balance,
+                            // Keep the original initial balance when editing
+                            initialBalance = uiState.selectedAccount!!.initialBalance
                         )
                     )
                 } else {
@@ -238,10 +240,20 @@ fun AccountItem(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium
                 )
+                
+                // Current Balance
                 Text(
-                    text = currencyFormatter.format(account.balance),
+                    text = "Current: ${currencyFormatter.format(account.balance)}",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = if (account.balance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                    color = if (account.balance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Medium
+                )
+                
+                // Initial Balance
+                Text(
+                    text = "Initial: ${currencyFormatter.format(account.initialBalance)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             

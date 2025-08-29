@@ -20,7 +20,7 @@ import com.expensetracker.data.model.User
 
 @Database(
     entities = [Account::class, Transaction::class, Category::class, Budget::class, User::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -71,6 +71,19 @@ abstract class ExpenseDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add initialBalance column to accounts table
+                database.execSQL(
+                    "ALTER TABLE accounts ADD COLUMN initialBalance REAL NOT NULL DEFAULT 0.0"
+                )
+                // Set initialBalance to current balance for existing accounts
+                database.execSQL(
+                    "UPDATE accounts SET initialBalance = balance"
+                )
+            }
+        }
+
         fun getDatabase(context: Context): ExpenseDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -78,7 +91,7 @@ abstract class ExpenseDatabase : RoomDatabase() {
                     ExpenseDatabase::class.java,
                     "expense_database"
                 )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build()
                 INSTANCE = instance
                 instance

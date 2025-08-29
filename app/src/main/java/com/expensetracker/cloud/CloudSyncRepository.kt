@@ -33,18 +33,39 @@ class CloudSyncRepository @Inject constructor(
                 return Result.success(Unit)
             }
             
-            android.util.Log.d("CloudSync", "Starting batch upload of ${accounts.size} accounts")
+            android.util.Log.d("CloudSync", "Starting smart upload of ${accounts.size} accounts")
+            
+            // Get existing accounts from cloud to avoid duplicates
+            val existingSnapshot = firestore.collection(userCollection).get().await()
+            val existingIds = existingSnapshot.documents.map { it.id }.toSet()
+            
+            // Filter out accounts that already exist in cloud
+            val newAccounts = accounts.filter { account ->
+                val accountId = account.id.toString()
+                val exists = existingIds.contains(accountId)
+                if (exists) {
+                    android.util.Log.d("CloudSync", "Account ${account.name} (ID: $accountId) already exists in cloud, skipping")
+                }
+                !exists
+            }
+            
+            if (newAccounts.isEmpty()) {
+                android.util.Log.d("CloudSync", "All accounts already exist in cloud, no upload needed")
+                return Result.success(Unit)
+            }
+            
+            android.util.Log.d("CloudSync", "Uploading ${newAccounts.size} new accounts (${accounts.size - newAccounts.size} already existed)")
             
             // Use batch for better performance
             val batch = firestore.batch()
-            accounts.forEach { account ->
+            newAccounts.forEach { account ->
                 val encryptedAccount = encryptionManager.encryptAccount(account)
                 val docRef = firestore.collection(userCollection).document(account.id.toString())
                 batch.set(docRef, encryptedAccount)
             }
             
             batch.commit().await()
-            android.util.Log.d("CloudSync", "Successfully uploaded ${accounts.size} accounts")
+            android.util.Log.d("CloudSync", "Successfully uploaded ${newAccounts.size} new accounts")
             
             Result.success(Unit)
         } catch (e: Exception) {
@@ -80,38 +101,59 @@ class CloudSyncRepository @Inject constructor(
     }
     
     // Transactions
-    suspend fun syncTransactionsToCloud(transactions: List<Transaction>): Result<Unit> {
+        suspend fun syncTransactionsToCloud(transactions: List<Transaction>): Result<Unit> {
         return try {
             val userCollection = getUserCollection("transactions") ?: throw Exception("User not signed in")
-            
+
             if (transactions.isEmpty()) {
                 return Result.success(Unit)
             }
-            
-            android.util.Log.d("CloudSync", "Starting batch upload of ${transactions.size} transactions")
-            
+
+            android.util.Log.d("CloudSync", "Starting smart upload of ${transactions.size} transactions")
+
+            // Get existing transaction IDs from cloud to avoid duplicates
+            val existingSnapshot = firestore.collection(userCollection).get().await()
+            val existingIds = existingSnapshot.documents.map { it.id }.toSet()
+
+            // Filter out transactions that already exist in cloud
+            val newTransactions = transactions.filter { transaction ->
+                val transactionId = transaction.id.toString()
+                val exists = existingIds.contains(transactionId)
+                if (exists) {
+                    android.util.Log.d("CloudSync", "Transaction ${transaction.description} (ID: $transactionId) already exists in cloud, skipping")
+                }
+                !exists
+            }
+
+            if (newTransactions.isEmpty()) {
+                android.util.Log.d("CloudSync", "All transactions already exist in cloud, no upload needed")
+                return Result.success(Unit)
+            }
+
+            android.util.Log.d("CloudSync", "Uploading ${newTransactions.size} new transactions (${transactions.size - newTransactions.size} already existed)")
+
             // For large datasets, split into batches (Firestore batch limit is 500 operations)
             val batchSize = 450 // Leave some margin
-            val totalBatches = (transactions.size + batchSize - 1) / batchSize
-            
+            val totalBatches = (newTransactions.size + batchSize - 1) / batchSize
+
             for (i in 0 until totalBatches) {
                 val startIndex = i * batchSize
-                val endIndex = minOf(startIndex + batchSize, transactions.size)
+                val endIndex = minOf(startIndex + batchSize, newTransactions.size)
                 val batch = firestore.batch()
-                
+
                 for (j in startIndex until endIndex) {
-                    val transaction = transactions[j]
+                    val transaction = newTransactions[j]
                     val encryptedTransaction = encryptionManager.encryptTransaction(transaction)
                     val docRef = firestore.collection(userCollection).document(transaction.id.toString())
                     batch.set(docRef, encryptedTransaction)
                 }
-                
+
                 batch.commit().await()
                 android.util.Log.d("CloudSync", "Uploaded batch ${i + 1}/$totalBatches (${endIndex - startIndex} transactions)")
             }
-            
-            android.util.Log.d("CloudSync", "Successfully uploaded all ${transactions.size} transactions")
-            
+
+            android.util.Log.d("CloudSync", "Successfully uploaded all ${newTransactions.size} new transactions")
+
             Result.success(Unit)
         } catch (e: Exception) {
             android.util.Log.e("CloudSync", "Failed to sync transactions to cloud: ${e.message}")
