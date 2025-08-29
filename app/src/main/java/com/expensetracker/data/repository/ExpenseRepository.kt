@@ -157,4 +157,19 @@ class ExpenseRepository @Inject constructor(
             }
         }
     }
+    
+    // Clear all local data (for logout)
+    suspend fun clearAllLocalData() {
+        android.util.Log.d("ExpenseRepository", "Clearing all local data...")
+        
+        // Clear all transactions first (due to foreign key constraints)
+        transactionDao.deleteAllTransactions()
+        
+        // Clear all other data
+        accountDao.deleteAllAccounts()
+        categoryDao.deleteAllCategories()
+        budgetDao.deleteAllBudgets()
+        
+        android.util.Log.d("ExpenseRepository", "All local data cleared successfully")
+    }
 }

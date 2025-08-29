@@ -52,4 +52,7 @@ interface TransactionDao {
         AND strftime('%Y', datetime(createdAt / 1000, 'unixepoch')) = :year
     """)
     suspend fun getTotalSpentForCategoryAndMonth(category: String, month: Int, year: String): Double?
+    
+    @Query("DELETE FROM transactions")
+    suspend fun deleteAllTransactions()
 }

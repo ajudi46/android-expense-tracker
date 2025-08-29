@@ -446,23 +446,62 @@ fun ProfileScreen(
             onDismissRequest = { showLogoutDialog = false },
             title = {
                 Text(
-                    text = "Logout",
-                    fontWeight = FontWeight.Bold
+                    text = "⚠️ Logout & Clear Data",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.error
                 )
             },
             text = {
-                Text("Are you sure you want to logout? Your local data will remain safe.")
+                Column {
+                    Text(
+                        text = "Are you sure you want to logout?",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "This will:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "• Clear all local data (accounts, transactions, budgets)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "• Sign you out of your account",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "• Protect your privacy on this device",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Your data will remain safely backed up in the cloud if you've synced it.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = {
                         authViewModel.signOut()
                         authViewModel.forceShowLogin()
                         showLogoutDialog = false
                         onLogoutSuccess()
-                    }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
                 ) {
-                    Text("Logout")
+                    Text("Logout & Clear Data")
                 }
             },
             dismissButton = {

@@ -26,4 +26,7 @@ interface AccountDao {
 
     @Query("SELECT SUM(balance) FROM accounts")
     fun getTotalBalance(): Flow<Double?>
+    
+    @Query("DELETE FROM accounts")
+    suspend fun deleteAllAccounts()
 }

@@ -141,19 +141,40 @@ class AuthViewModel @Inject constructor(
     fun signOut() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
+            showToast("Signing out and clearing local data...", ToastType.INFO)
             
-            // Clear encryption key before signing out
-            encryptionManager.clearEncryptionKey()
-            Log.d("ExpenseTracker", "Encryption key cleared for sign-out")
-            
-            val result = authRepository.signOut()
-            
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                errorMessage = if (result.isFailure) {
-                    result.exceptionOrNull()?.message ?: "Sign out failed"
-                } else null
-            )
+            try {
+                Log.d("ExpenseTracker", "Starting logout process...")
+                
+                // Clear all local data first
+                expenseRepository.clearAllLocalData()
+                Log.d("ExpenseTracker", "Local data cleared successfully")
+                
+                // Clear encryption key
+                encryptionManager.clearEncryptionKey()
+                Log.d("ExpenseTracker", "Encryption key cleared")
+                
+                // Clear user preferences
+                userPreferenceManager.setHasSeenLogin(false)
+                userPreferenceManager.setHasSkippedLogin(false)
+                Log.d("ExpenseTracker", "User preferences cleared")
+                
+                // Sign out from Firebase
+                val result = authRepository.signOut()
+                
+                if (result.isSuccess) {
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                    showToast("✅ Signed out successfully. All local data cleared.", ToastType.SUCCESS)
+                    Log.d("ExpenseTracker", "Logout completed successfully")
+                } else {
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                    showToast("❌ Sign out failed: ${result.exceptionOrNull()?.message}", ToastType.ERROR)
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+                showToast("❌ Logout failed: ${e.message}", ToastType.ERROR)
+                Log.e("ExpenseTracker", "Logout failed: ${e.message}", e)
+            }
         }
     }
     
