@@ -12,10 +12,12 @@ import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.outlined.AccountBalance
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Dashboard
 import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.PieChart
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -66,6 +68,13 @@ sealed class BottomNavItem(
         selectedIcon = Icons.Filled.History,
         unselectedIcon = Icons.Outlined.History
     )
+    
+    object Budget : BottomNavItem(
+        route = "budget",
+        title = "Budget",
+        selectedIcon = Icons.Filled.PieChart,
+        unselectedIcon = Icons.Outlined.PieChart
+    )
 }
 
 @Composable
@@ -76,7 +85,8 @@ fun ExpenseTrackerBottomNavigation(
         BottomNavItem.Dashboard,
         BottomNavItem.Accounts,
         BottomNavItem.AddTransaction,
-        BottomNavItem.RecentTransactions
+        BottomNavItem.RecentTransactions,
+        BottomNavItem.Budget
     )
 ) {
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
@@ -131,8 +141,8 @@ fun ExpenseTrackerBottomNavigation(
         ) {
             Row(
                 modifier = Modifier
-                    .padding(horizontal = 20.dp, vertical = 8.dp), // Shorter height
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp), // Adjusted for 5 items
+                horizontalArrangement = Arrangement.spacedBy(12.dp), // Reduced spacing for 5 items
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 items.forEach { item ->
@@ -169,7 +179,7 @@ private fun FloatingNavItem(
     
     Box(
         modifier = Modifier
-            .size(48.dp) // Slightly smaller for shorter height
+            .size(44.dp) // Smaller for 5 items
             .clip(CircleShape)
             .background(
                 color = if (isSelected) 
@@ -181,7 +191,7 @@ private fun FloatingNavItem(
                 interactionSource = interactionSource,
                 indication = rememberRipple(
                     bounded = true,
-                    radius = 24.dp,
+                    radius = 22.dp, // Adjusted for smaller size
                     color = MaterialTheme.colorScheme.primary
                 ),
                 onClick = onClick
@@ -191,7 +201,7 @@ private fun FloatingNavItem(
         Icon(
             imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
             contentDescription = item.title,
-            modifier = Modifier.size(24.dp), // Slightly smaller icon
+            modifier = Modifier.size(22.dp), // Adjusted for 5 items
             tint = if (isSelected) 
                 MaterialTheme.colorScheme.primary 
             else 

@@ -14,6 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.expensetracker.ui.screen.AccountsScreen
 import com.expensetracker.ui.screen.AddTransactionScreen
+import com.expensetracker.ui.screen.BudgetScreen
 import com.expensetracker.ui.screen.DashboardScreen
 import com.expensetracker.ui.screen.RecentTransactionsScreen
 
@@ -66,6 +67,14 @@ fun ExpenseTrackerNavigation(
             composable(Screen.RecentTransactions.route) {
                 RecentTransactionsScreen()
             }
+
+            composable(Screen.Budget.route) {
+                BudgetScreen(
+                    onScrollDirectionChanged = { visible ->
+                        isBottomNavVisible = visible
+                    }
+                )
+            }
         }
         
         // Floating bottom navigation
@@ -87,4 +96,5 @@ sealed class Screen(val route: String) {
     object Accounts : Screen("accounts")
     object AddTransaction : Screen("add_transaction")
     object RecentTransactions : Screen("recent_transactions")
+    object Budget : Screen("budget")
 }
