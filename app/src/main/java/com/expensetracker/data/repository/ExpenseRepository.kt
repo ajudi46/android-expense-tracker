@@ -26,6 +26,7 @@ class ExpenseRepository @Inject constructor(
     suspend fun getAccountById(id: Long): Account? = accountDao.getAccountById(id)
     suspend fun insertAccount(account: Account): Long = accountDao.insertAccount(account)
     suspend fun updateAccount(account: Account) = accountDao.updateAccount(account)
+    suspend fun updateAccountBalance(accountId: Long, amount: Double) = accountDao.updateBalance(accountId, amount)
     suspend fun deleteAccount(account: Account) = accountDao.deleteAccount(account)
     fun getTotalBalance(): Flow<Double?> = accountDao.getTotalBalance()
 

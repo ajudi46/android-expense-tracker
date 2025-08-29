@@ -38,6 +38,9 @@ fun AccountsScreen(
     val accounts by accountViewModel.accounts.collectAsStateWithLifecycle(initialValue = emptyList())
     val uiState by accountViewModel.uiState.collectAsStateWithLifecycle()
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.getDefault())
+    
+    // State for delete confirmation dialog
+    var accountToDelete by remember { mutableStateOf<Account?>(null) }
     val listState = rememberLazyListState()
     
     // Track scroll direction
@@ -156,7 +159,7 @@ fun AccountsScreen(
                             )
                         },
                         onDeleteAccount = {
-                            accountViewModel.deleteAccount(account)
+                            accountToDelete = account
                         }
                     )
                 }
@@ -196,6 +199,32 @@ fun AccountsScreen(
                         selectedAccount = null
                     )
                 )
+            }
+        )
+    }
+    
+    // Delete confirmation dialog
+    accountToDelete?.let { account ->
+        AlertDialog(
+            onDismissRequest = { accountToDelete = null },
+            title = { Text("Delete Account") },
+            text = { 
+                Text("Are you sure you want to delete the account '${account.name}'?\n\nThis action cannot be undone.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        accountViewModel.deleteAccount(account)
+                        accountToDelete = null
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { accountToDelete = null }) {
+                    Text("Cancel")
+                }
             }
         )
     }
