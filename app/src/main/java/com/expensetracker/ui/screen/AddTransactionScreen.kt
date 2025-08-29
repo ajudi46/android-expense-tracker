@@ -42,8 +42,12 @@ fun AddTransactionScreen(
     // Test ViewModel integration
     val accounts by accountViewModel.accounts.collectAsStateWithLifecycle(initialValue = emptyList())
     
-    // Simple static categories for testing
-    val testCategories = listOf("Food", "Transport", "Shopping", "Bills", "Other")
+    // Enhanced categories (keeping same structure, just better options)
+    val enhancedCategories = listOf(
+        "Food & Dining", "Transportation", "Shopping", "Bills & Utilities", 
+        "Healthcare", "Groceries", "Entertainment", "Education", "Travel", 
+        "Subscriptions", "Fuel", "Business", "Other"
+    )
     
     Column(
         modifier = Modifier
@@ -53,12 +57,12 @@ fun AddTransactionScreen(
     ) {
         // Header
         Text(
-            text = "Add Transaction - Step 7",
+            text = "Add Transaction - Step 8",
             style = MaterialTheme.typography.headlineLarge
         )
         
         Text(
-            text = "Testing: Complete Form + Save Transaction Logic",
+            text = "Testing: Enhanced Categories (13 options)",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -173,7 +177,7 @@ fun AddTransactionScreen(
                 expanded = expandedCategory,
                 onDismissRequest = { expandedCategory = false }
             ) {
-                testCategories.forEach { category ->
+                enhancedCategories.forEach { category ->
                     DropdownMenuItem(
                         text = { Text(category) },
                         onClick = {
