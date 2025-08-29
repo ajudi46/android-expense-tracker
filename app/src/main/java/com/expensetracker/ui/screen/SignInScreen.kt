@@ -12,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -27,7 +26,6 @@ fun SignInScreen(
     onSignInSuccess: () -> Unit,
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val uiState by authViewModel.uiState.collectAsStateWithLifecycle()
     
     val googleSignInLauncher = rememberLauncherForActivityResult(
@@ -185,7 +183,10 @@ fun SignInScreen(
         
         // Continue without sign in option
         OutlinedButton(
-            onClick = onSignInSuccess,
+            onClick = {
+                authViewModel.skipLogin()
+                onSignInSuccess()
+            },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.outlinedButtonColors(

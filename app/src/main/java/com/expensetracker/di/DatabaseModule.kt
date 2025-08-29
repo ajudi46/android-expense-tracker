@@ -8,6 +8,7 @@ import com.expensetracker.data.dao.CategoryDao
 import com.expensetracker.data.dao.TransactionDao
 import com.expensetracker.data.dao.UserDao
 import com.expensetracker.data.database.ExpenseDatabase
+import com.expensetracker.data.preference.UserPreferenceManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -48,5 +49,11 @@ object DatabaseModule {
     @Provides
     fun provideUserDao(database: ExpenseDatabase): UserDao {
         return database.userDao()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideUserPreferenceManager(@ApplicationContext context: Context): UserPreferenceManager {
+        return UserPreferenceManager(context)
     }
 }

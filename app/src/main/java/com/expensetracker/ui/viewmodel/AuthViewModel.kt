@@ -9,6 +9,7 @@ import com.google.android.gms.common.api.ApiException
 import com.expensetracker.auth.AuthenticationRepository
 import com.expensetracker.cloud.CloudSyncRepository
 import com.expensetracker.data.model.UserProfile
+import com.expensetracker.data.preference.UserPreferenceManager
 import com.expensetracker.data.repository.ExpenseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -22,14 +23,18 @@ data class AuthUiState(
     val userEmail: String? = null,
     val userPhotoUrl: String? = null,
     val errorMessage: String? = null,
-    val isSyncing: Boolean = false
+    val isSyncing: Boolean = false,
+    val hasSeenLogin: Boolean = false,
+    val hasSkippedLogin: Boolean = false,
+    val shouldShowLogin: Boolean = false
 )
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthenticationRepository,
     private val cloudSyncRepository: CloudSyncRepository,
-    private val expenseRepository: ExpenseRepository
+    private val expenseRepository: ExpenseRepository,
+    private val userPreferenceManager: UserPreferenceManager
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -43,13 +48,19 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             combine(
                 authRepository.isSignedIn,
-                authRepository.currentUser
-            ) { isSignedIn, user ->
+                authRepository.currentUser,
+                userPreferenceManager.hasSeenLogin,
+                userPreferenceManager.hasSkippedLogin
+            ) { isSignedIn, user, hasSeenLogin, hasSkippedLogin ->
+                val shouldShowLogin = !isSignedIn && !hasSeenLogin && !hasSkippedLogin
                 _uiState.value = _uiState.value.copy(
                     isSignedIn = isSignedIn,
                     user = user,
                     userEmail = user?.email,
-                    userPhotoUrl = user?.photoUrl
+                    userPhotoUrl = user?.photoUrl,
+                    hasSeenLogin = hasSeenLogin,
+                    hasSkippedLogin = hasSkippedLogin,
+                    shouldShowLogin = shouldShowLogin
                 )
             }.collect()
         }
@@ -70,6 +81,9 @@ class AuthViewModel @Inject constructor(
                 val signInResult = authRepository.signInWithGoogle(account)
                 
                 if (signInResult.isSuccess) {
+                    // Mark that user has seen login and signed in
+                    userPreferenceManager.setHasSeenLogin(true)
+                    userPreferenceManager.setHasSkippedLogin(false)
                     // Start background sync after successful sign in
                     performInitialSync()
                 } else {
@@ -173,5 +187,16 @@ class AuthViewModel @Inject constructor(
     
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
+    }
+    
+    fun skipLogin() {
+        userPreferenceManager.setHasSeenLogin(true)
+        userPreferenceManager.setHasSkippedLogin(true)
+    }
+    
+    fun forceShowLogin() {
+        // Used when user logs out - they should see login again
+        userPreferenceManager.setHasSeenLogin(false)
+        userPreferenceManager.setHasSkippedLogin(false)
     }
 }

@@ -27,6 +27,7 @@ import com.expensetracker.ui.viewmodel.AuthViewModel
 @Composable
 fun ProfileScreen(
     onNavigateBack: () -> Unit,
+    onLogoutSuccess: () -> Unit = {},
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
@@ -215,8 +216,9 @@ fun ProfileScreen(
                 TextButton(
                     onClick = {
                         authViewModel.signOut()
+                        authViewModel.forceShowLogin()
                         showLogoutDialog = false
-                        onNavigateBack()
+                        onLogoutSuccess()
                     }
                 ) {
                     Text("Logout")

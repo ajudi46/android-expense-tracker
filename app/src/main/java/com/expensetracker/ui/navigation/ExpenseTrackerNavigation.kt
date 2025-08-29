@@ -31,8 +31,12 @@ fun ExpenseTrackerNavigation(
     var isBottomNavVisible by remember { mutableStateOf(true) }
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
     
-    // Always start with Dashboard - users can use app without signing in
-    val startDestination = Screen.Dashboard.route
+    // Show login screen for new users, Dashboard for existing users
+    val startDestination = if (authState.shouldShowLogin) {
+        Screen.SignIn.route
+    } else {
+        Screen.Dashboard.route
+    }
     
     Box(modifier = Modifier.fillMaxSize()) {
         // Main content
@@ -45,8 +49,10 @@ fun ExpenseTrackerNavigation(
             composable(Screen.SignIn.route) {
                 SignInScreen(
                     onSignInSuccess = {
-                        // Just go back to previous screen after sign-in
-                        navController.popBackStack()
+                        // Navigate to Dashboard after sign-in or skip
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.SignIn.route) { inclusive = true }
+                        }
                     },
                     authViewModel = authViewModel
                 )
@@ -111,6 +117,12 @@ fun ExpenseTrackerNavigation(
                 ProfileScreen(
                     onNavigateBack = {
                         navController.popBackStack()
+                    },
+                    onLogoutSuccess = {
+                        // Navigate to login screen after logout
+                        navController.navigate(Screen.SignIn.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     },
                     authViewModel = authViewModel
                 )
