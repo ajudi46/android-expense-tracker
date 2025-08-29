@@ -14,6 +14,7 @@ import com.expensetracker.data.model.UserProfile
 import com.expensetracker.data.model.Transaction
 import com.expensetracker.data.preference.UserPreferenceManager
 import com.expensetracker.data.repository.ExpenseRepository
+import com.expensetracker.security.EncryptionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -49,7 +50,8 @@ class AuthViewModel @Inject constructor(
     private val authRepository: AuthenticationRepository,
     private val cloudSyncRepository: CloudSyncRepository,
     private val expenseRepository: ExpenseRepository,
-    private val userPreferenceManager: UserPreferenceManager
+    private val userPreferenceManager: UserPreferenceManager,
+    private val encryptionManager: EncryptionManager
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -102,6 +104,11 @@ class AuthViewModel @Inject constructor(
                     // Mark that user has seen login and signed in
                     userPreferenceManager.setHasSeenLogin(true)
                     userPreferenceManager.setHasSkippedLogin(false)
+                    
+                    // Refresh encryption key to ensure consistency across devices
+                    encryptionManager.refreshEncryptionKey()
+                    Log.d("ExpenseTracker", "Encryption key refreshed for new sign-in")
+                    
                     // Start background sync after successful sign in
                     performInitialSync()
                 } else {
@@ -134,6 +141,10 @@ class AuthViewModel @Inject constructor(
     fun signOut() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
+            
+            // Clear encryption key before signing out
+            encryptionManager.clearEncryptionKey()
+            Log.d("ExpenseTracker", "Encryption key cleared for sign-out")
             
             val result = authRepository.signOut()
             
@@ -395,6 +406,37 @@ class AuthViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(isLoading = false)
                 showToast("❌ Firestore test failed: ${e.message}", ToastType.ERROR)
                 Log.e("ExpenseTracker", "Firestore connection test failed: ${e.message}", e)
+            }
+        }
+    }
+    
+    fun testEncryption() {
+        if (!_uiState.value.isSignedIn) {
+            showToast("Please sign in to test encryption", ToastType.WARNING)
+            return
+        }
+        
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            showToast("Testing encryption consistency...", ToastType.INFO)
+            
+            try {
+                Log.d("ExpenseTracker", "Testing encryption consistency...")
+                
+                val result = cloudSyncRepository.testEncryptionConsistency()
+                
+                if (result.isSuccess) {
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                    showToast("✅ Encryption test successful!", ToastType.SUCCESS)
+                    Log.d("ExpenseTracker", "Encryption test successful: ${result.getOrNull()}")
+                } else {
+                    _uiState.value = _uiState.value.copy(isLoading = false)
+                    showToast("❌ Encryption test failed: ${result.exceptionOrNull()?.message}", ToastType.ERROR)
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+                showToast("❌ Encryption test failed: ${e.message}", ToastType.ERROR)
+                Log.e("ExpenseTracker", "Encryption test failed: ${e.message}", e)
             }
         }
     }

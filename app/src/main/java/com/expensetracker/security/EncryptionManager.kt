@@ -12,6 +12,8 @@ import javax.crypto.spec.SecretKeySpec
 import android.util.Base64
 import javax.inject.Inject
 import javax.inject.Singleton
+import java.security.MessageDigest
+import com.google.firebase.auth.FirebaseAuth
 
 @Singleton
 class EncryptionManager @Inject constructor(
@@ -32,12 +34,30 @@ class EncryptionManager @Inject constructor(
     )
     
     private fun getOrCreateEncryptionKey(): SecretKey {
-        val keyString = encryptedPrefs.getString("user_encryption_key", null)
+        // Try to get existing key from local storage first
+        val localKeyString = encryptedPrefs.getString("user_encryption_key", null)
         
-        return if (keyString != null) {
-            val keyBytes = Base64.decode(keyString, Base64.DEFAULT)
+        // Get current Firebase user
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        
+        return if (currentUser != null) {
+            // Use Firebase UID to derive consistent encryption key across devices
+            val userBasedKey = deriveKeyFromUserId(currentUser.uid)
+            
+            // Store the key locally for offline access
+            val keyString = Base64.encodeToString(userBasedKey.encoded, Base64.DEFAULT)
+            encryptedPrefs.edit().putString("user_encryption_key", keyString).apply()
+            
+            android.util.Log.d("EncryptionManager", "Using user-derived encryption key for UID: ${currentUser.uid}")
+            userBasedKey
+        } else if (localKeyString != null) {
+            // Fallback to local key if user not signed in
+            android.util.Log.d("EncryptionManager", "Using local encryption key (user not signed in)")
+            val keyBytes = Base64.decode(localKeyString, Base64.DEFAULT)
             SecretKeySpec(keyBytes, "AES")
         } else {
+            // Last resort: generate random key
+            android.util.Log.w("EncryptionManager", "Generating random encryption key (no user, no local key)")
             val keyGenerator = KeyGenerator.getInstance("AES")
             keyGenerator.init(256)
             val secretKey = keyGenerator.generateKey()
@@ -47,6 +67,13 @@ class EncryptionManager @Inject constructor(
             
             secretKey
         }
+    }
+    
+    private fun deriveKeyFromUserId(userId: String): SecretKey {
+        // Derive a consistent 256-bit key from the user ID
+        val digest = MessageDigest.getInstance("SHA-256")
+        val hash = digest.digest("ExpenseTracker_$userId".toByteArray(Charsets.UTF_8))
+        return SecretKeySpec(hash, "AES")
     }
     
     private fun encrypt(data: String): String {
@@ -151,5 +178,13 @@ class EncryptionManager @Inject constructor(
     
     fun clearEncryptionKey() {
         encryptedPrefs.edit().remove("user_encryption_key").apply()
+        android.util.Log.d("EncryptionManager", "Encryption key cleared")
+    }
+    
+    fun refreshEncryptionKey() {
+        // Clear existing key and regenerate based on current user
+        clearEncryptionKey()
+        getOrCreateEncryptionKey() // This will regenerate the key
+        android.util.Log.d("EncryptionManager", "Encryption key refreshed")
     }
 }

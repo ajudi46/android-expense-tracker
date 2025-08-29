@@ -283,6 +283,23 @@ fun ProfileScreen(
                         color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                     )
                     
+                    // Test Encryption (for debugging E2E encryption issues)
+                    ProfileOption(
+                        icon = Icons.Default.Settings,
+                        title = "Test Encryption",
+                        subtitle = "Debug end-to-end encryption consistency",
+                        onClick = {
+                            authViewModel.testEncryption()
+                        },
+                        enabled = authState.isSignedIn && !authState.isBackingUp && !authState.isRestoring && !authState.isSyncing && !authState.isLoading,
+                        showProgress = authState.isLoading
+                    )
+                    
+                    Divider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                    )
+                    
                     // Clear Cloud Data Option (for testing)
                     ProfileOption(
                         icon = Icons.Default.CloudOff,

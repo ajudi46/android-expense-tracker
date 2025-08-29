@@ -291,6 +291,67 @@ class CloudSyncRepository @Inject constructor(
         }
     }
     
+    // Test encryption/decryption consistency
+    suspend fun testEncryptionConsistency(): Result<String> {
+        return try {
+            val currentUser = authRepository.getCurrentFirebaseUser() ?: throw Exception("User not signed in")
+            
+            android.util.Log.d("CloudSync", "Testing encryption consistency for user: ${currentUser.uid}")
+            
+            // Create test data
+            val testAccount = com.expensetracker.data.model.Account(
+                id = 999999,
+                name = "Test Account",
+                iconName = "test_icon",
+                balance = 100.50
+            )
+            
+            // Test encrypt -> upload -> download -> decrypt cycle
+            val encryptedData = encryptionManager.encryptAccount(testAccount)
+            
+            val testCollection = "users/${currentUser.uid}/encryption_test"
+            android.util.Log.d("CloudSync", "Testing encryption cycle with collection: $testCollection")
+            
+            // Upload encrypted data
+            firestore.collection(testCollection)
+                .document("test_encryption")
+                .set(encryptedData)
+                .await()
+            
+            // Download and decrypt
+            val downloadedDoc = firestore.collection(testCollection)
+                .document("test_encryption")
+                .get()
+                .await()
+            
+            if (downloadedDoc.exists()) {
+                val downloadedData = downloadedDoc.data ?: throw Exception("No data in document")
+                val decryptedAccount = encryptionManager.decryptAccount(downloadedData)
+                
+                // Verify data integrity
+                if (decryptedAccount.name == testAccount.name && 
+                    decryptedAccount.balance == testAccount.balance) {
+                    
+                    // Clean up test document
+                    firestore.collection(testCollection)
+                        .document("test_encryption")
+                        .delete()
+                        .await()
+                    
+                    android.util.Log.d("CloudSync", "Encryption test successful!")
+                    Result.success("Encryption/decryption working correctly! Test account: ${decryptedAccount.name}, Balance: ${decryptedAccount.balance}")
+                } else {
+                    throw Exception("Decrypted data doesn't match original: got ${decryptedAccount.name}/${decryptedAccount.balance}")
+                }
+            } else {
+                throw Exception("Test document was not found after upload")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("CloudSync", "Encryption test failed: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+    
     // Test basic Firestore connectivity
     suspend fun testFirestoreConnection(): Result<String> {
         return try {
