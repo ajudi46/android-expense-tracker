@@ -6,6 +6,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +35,6 @@ fun AddTransactionScreen(
     transactionViewModel: TransactionViewModel = hiltViewModel(),
     accountViewModel: AccountViewModel = hiltViewModel()
 ) {
-    val uiState by transactionViewModel.uiState.collectAsStateWithLifecycle()
     val accounts by accountViewModel.accounts.collectAsStateWithLifecycle(initialValue = emptyList())
 
     var amount by remember { mutableStateOf("") }
@@ -127,7 +129,7 @@ fun AddTransactionScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
-                        onClick = { /* Navigate to accounts */ },
+                        onClick = { onNavigateBack() }, // Go back to let user add account
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.error
                         )
@@ -438,42 +440,26 @@ fun AddTransactionScreen(
         )
         
         DatePickerDialog(
-            onDateSelected = { dateMillis ->
-                dateMillis?.let { selectedDate = it }
-                showDatePicker = false
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { selectedDate = it }
+                    showDatePicker = false
+                }) {
+                    Text("OK")
+                }
             },
-            onDismiss = { showDatePicker = false }
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun DatePickerDialog(
-    onDateSelected: (Long?) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val datePickerState = rememberDatePickerState()
-
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = {
-                onDateSelected(datePickerState.selectedDateMillis)
-            }) {
-                Text("OK")
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel")
+                }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
+        ) {
+            DatePicker(
+                state = datePickerState,
+                showModeToggle = true
+            )
         }
-    ) {
-        DatePicker(
-            state = datePickerState,
-            showModeToggle = true
-        )
     }
 }
 
