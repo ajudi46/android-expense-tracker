@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.expensetracker.data.model.Budget
+import com.expensetracker.ui.component.PlayerStyleMonthNavigator
+import com.expensetracker.ui.component.PlayerStyleProgressBar
 import com.expensetracker.ui.viewmodel.BudgetViewModel
 import java.text.NumberFormat
 import java.util.*
@@ -86,63 +88,28 @@ fun BudgetScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Month Navigation
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            ),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = {
-                        if (currentMonth == 1) {
-                            currentMonth = 12
-                            currentYear -= 1
-                        } else {
-                            currentMonth -= 1
-                        }
-                    }
-                ) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = "Previous Month",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+        // Player Style Month Navigation
+        PlayerStyleMonthNavigator(
+            currentMonth = currentMonth,
+            currentYear = currentYear,
+            monthNames = monthNames,
+            onPreviousMonth = {
+                if (currentMonth == 1) {
+                    currentMonth = 12
+                    currentYear -= 1
+                } else {
+                    currentMonth -= 1
                 }
-                
-                Text(
-                    text = "${monthNames[currentMonth - 1]} $currentYear",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                
-                IconButton(
-                    onClick = {
-                        if (currentMonth == 12) {
-                            currentMonth = 1
-                            currentYear += 1
-                        } else {
-                            currentMonth += 1
-                        }
-                    }
-                ) {
-                    Icon(
-                        Icons.Default.ArrowForward,
-                        contentDescription = "Next Month",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+            },
+            onNextMonth = {
+                if (currentMonth == 12) {
+                    currentMonth = 1
+                    currentYear += 1
+                } else {
+                    currentMonth += 1
                 }
             }
-        }
+        )
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -332,51 +299,26 @@ fun BudgetItem(
                 }
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            // Player Style Progress Bar
+            PlayerStyleProgressBar(
+                progress = budget.percentageUsed,
+                spent = budget.currentSpent,
+                limit = budget.limitAmount,
+                category = budget.category
+            )
+            
+            if (budget.isOverBudget) {
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Spent: ${currencyFormatter.format(budget.currentSpent)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (budget.isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "Limit: ${currencyFormatter.format(budget.limitAmount)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "⚠️ Over by ${currencyFormatter.format(budget.currentSpent - budget.limitAmount)}",
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = MaterialTheme.colorScheme.error
                 )
             }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Progress Bar
-            LinearProgressIndicator(
-                progress = budget.percentageUsed.coerceAtMost(1f),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp),
-                color = when {
-                    budget.isOverBudget -> MaterialTheme.colorScheme.error
-                    budget.percentageUsed > 0.8f -> Color(0xFFFF9800) // Orange warning
-                    else -> MaterialTheme.colorScheme.primary
-                },
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            
-            Text(
-                text = if (budget.isOverBudget) {
-                    "Over by ${currencyFormatter.format(budget.currentSpent - budget.limitAmount)}"
-                } else {
-                    "Remaining: ${currencyFormatter.format(budget.remainingAmount)}"
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = if (budget.isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }

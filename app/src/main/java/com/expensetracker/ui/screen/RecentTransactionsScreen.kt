@@ -28,6 +28,7 @@ import com.expensetracker.ui.theme.incomeColor
 import com.expensetracker.ui.theme.incomeContainer
 import com.expensetracker.ui.theme.transferColor
 import com.expensetracker.ui.theme.transferContainer
+import com.expensetracker.ui.component.PlayerStyleMonthNavigator
 import com.expensetracker.ui.viewmodel.TransactionViewModel
 import java.text.NumberFormat
 import java.text.SimpleDateFormat
@@ -65,63 +66,28 @@ fun RecentTransactionsScreen(
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // Month Navigation
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            ),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = {
-                        if (currentMonth == 1) {
-                            currentMonth = 12
-                            currentYear -= 1
-                        } else {
-                            currentMonth -= 1
-                        }
-                    }
-                ) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = "Previous Month",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+        // Player Style Month Navigation
+        PlayerStyleMonthNavigator(
+            currentMonth = currentMonth,
+            currentYear = currentYear,
+            monthNames = monthNames,
+            onPreviousMonth = {
+                if (currentMonth == 1) {
+                    currentMonth = 12
+                    currentYear -= 1
+                } else {
+                    currentMonth -= 1
                 }
-                
-                Text(
-                    text = "${monthNames[currentMonth - 1]} $currentYear",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                
-                IconButton(
-                    onClick = {
-                        if (currentMonth == 12) {
-                            currentMonth = 1
-                            currentYear += 1
-                        } else {
-                            currentMonth += 1
-                        }
-                    }
-                ) {
-                    Icon(
-                        Icons.Default.ArrowForward,
-                        contentDescription = "Next Month",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+            },
+            onNextMonth = {
+                if (currentMonth == 12) {
+                    currentMonth = 1
+                    currentYear += 1
+                } else {
+                    currentMonth += 1
                 }
             }
-        }
+        )
 
         Spacer(modifier = Modifier.height(20.dp))
 
