@@ -1,0 +1,66 @@
+package com.expensetracker.data.repository
+
+import com.expensetracker.data.dao.AccountDao
+import com.expensetracker.data.dao.CategoryDao
+import com.expensetracker.data.dao.TransactionDao
+import com.expensetracker.data.model.Account
+import com.expensetracker.data.model.Category
+import com.expensetracker.data.model.Transaction
+import com.expensetracker.data.model.TransactionType
+import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class ExpenseRepository @Inject constructor(
+    private val accountDao: AccountDao,
+    private val transactionDao: TransactionDao,
+    private val categoryDao: CategoryDao
+) {
+    // Account operations
+    fun getAllAccounts(): Flow<List<Account>> = accountDao.getAllAccounts()
+    suspend fun getAccountById(id: Long): Account? = accountDao.getAccountById(id)
+    suspend fun insertAccount(account: Account): Long = accountDao.insertAccount(account)
+    suspend fun updateAccount(account: Account) = accountDao.updateAccount(account)
+    suspend fun deleteAccount(account: Account) = accountDao.deleteAccount(account)
+    fun getTotalBalance(): Flow<Double?> = accountDao.getTotalBalance()
+
+    // Transaction operations
+    fun getAllTransactions(): Flow<List<Transaction>> = transactionDao.getAllTransactions()
+    fun getRecentTransactions(limit: Int = 10): Flow<List<Transaction>> = transactionDao.getRecentTransactions(limit)
+    suspend fun getTransactionById(id: Long): Transaction? = transactionDao.getTransactionById(id)
+    fun getTransactionsByAccount(accountId: Long): Flow<List<Transaction>> = transactionDao.getTransactionsByAccount(accountId)
+    
+    suspend fun insertTransaction(transaction: Transaction): Long {
+        val transactionId = transactionDao.insertTransaction(transaction)
+        
+        // Update account balances based on transaction type
+        when (transaction.type) {
+            TransactionType.EXPENSE -> {
+                accountDao.updateBalance(transaction.fromAccountId, -transaction.amount)
+            }
+            TransactionType.INCOME -> {
+                accountDao.updateBalance(transaction.fromAccountId, transaction.amount)
+            }
+            TransactionType.TRANSFER -> {
+                transaction.toAccountId?.let { toAccountId ->
+                    accountDao.updateBalance(transaction.fromAccountId, -transaction.amount)
+                    accountDao.updateBalance(toAccountId, transaction.amount)
+                }
+            }
+        }
+        
+        return transactionId
+    }
+    
+    suspend fun updateTransaction(transaction: Transaction) = transactionDao.updateTransaction(transaction)
+    suspend fun deleteTransaction(transaction: Transaction) = transactionDao.deleteTransaction(transaction)
+
+    // Category operations
+    fun getAllCategories(): Flow<List<Category>> = categoryDao.getAllCategories()
+    fun getCategoriesByType(type: TransactionType): Flow<List<Category>> = categoryDao.getCategoriesByType(type)
+    suspend fun getCategoryById(id: Long): Category? = categoryDao.getCategoryById(id)
+    suspend fun insertCategory(category: Category): Long = categoryDao.insertCategory(category)
+    suspend fun updateCategory(category: Category) = categoryDao.updateCategory(category)
+    suspend fun deleteCategory(category: Category) = categoryDao.deleteCategory(category)
+}
