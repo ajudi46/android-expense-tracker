@@ -31,18 +31,22 @@ fun PlayerStyleProgressBar(
     category: String,
     modifier: Modifier = Modifier
 ) {
+    // Calculate progress directly to ensure accuracy
+    val calculatedProgress = if (limit > 0) (spent / limit).toFloat().coerceIn(0f, 2f) else 0f
+    val displayProgress = calculatedProgress.coerceIn(0f, 1f) // Cap at 100% for display
+    
     val animatedProgress by animateFloatAsState(
-        targetValue = progress.coerceIn(0f, 1f),
+        targetValue = displayProgress,
         animationSpec = tween(durationMillis = 1000),
         label = "progress"
     )
     
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.getDefault())
     
-    // Color based on progress
+    // Color based on calculated progress
     val progressColor = when {
-        progress < 0.7f -> MaterialTheme.colorScheme.primary
-        progress < 1.0f -> Color(0xFFFF9800) // Orange
+        calculatedProgress < 0.7f -> MaterialTheme.colorScheme.primary
+        calculatedProgress < 1.0f -> Color(0xFFFF9800) // Orange
         else -> Color(0xFFFF5722) // Red
     }
     
@@ -133,7 +137,7 @@ fun PlayerStyleProgressBar(
             )
             
             Text(
-                text = "${(progress * 100).toInt()}%",
+                text = "${(calculatedProgress * 100).toInt()}%",
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontWeight = FontWeight.SemiBold
                 ),
