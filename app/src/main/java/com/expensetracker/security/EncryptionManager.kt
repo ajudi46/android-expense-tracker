@@ -105,6 +105,8 @@ class EncryptionManager @Inject constructor(
     // Account encryption/decryption
     fun encryptAccount(account: Account): Map<String, Any> {
         val jsonString = gson.toJson(account)
+        android.util.Log.d("EncryptionManager", "Encrypting account: ${account.name}, balance: ${account.balance}")
+        android.util.Log.d("EncryptionManager", "Account JSON: $jsonString")
         val encryptedString = encrypt(jsonString)
         
         return mapOf(
@@ -117,7 +119,10 @@ class EncryptionManager @Inject constructor(
     fun decryptAccount(data: Map<String, Any>): Account {
         val encryptedData = data["encryptedData"] as String
         val decryptedString = decrypt(encryptedData)
-        return gson.fromJson(decryptedString, Account::class.java)
+        android.util.Log.d("EncryptionManager", "Decrypted account JSON: $decryptedString")
+        val account = gson.fromJson(decryptedString, Account::class.java)
+        android.util.Log.d("EncryptionManager", "Decrypted account: ${account.name}, balance: ${account.balance}")
+        return account
     }
     
     // Transaction encryption/decryption

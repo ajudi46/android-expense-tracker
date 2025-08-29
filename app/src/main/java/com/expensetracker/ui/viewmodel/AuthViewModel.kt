@@ -298,6 +298,11 @@ class AuthViewModel @Inject constructor(
                 
                 Log.d("ExpenseTracker", "Found ${localAccounts.size} accounts, ${localTransactions.size} transactions to backup")
                 
+                // Debug: Log account balances before backup
+                localAccounts.forEach { account ->
+                    Log.d("ExpenseTracker", "BACKUP - Account: ${account.name}, Balance: ${account.balance}")
+                }
+                
                 if (localAccounts.isEmpty() && localTransactions.isEmpty()) {
                     _uiState.value = _uiState.value.copy(isBackingUp = false)
                     showToast("No data to backup. Add some accounts and transactions first.", ToastType.WARNING)
@@ -460,15 +465,40 @@ class AuthViewModel @Inject constructor(
             try {
                 Log.d("ExpenseTracker", "Testing encryption consistency...")
                 
-                val result = cloudSyncRepository.testEncryptionConsistency()
+                // Test account encryption specifically with balance values
+                val testAccount = com.expensetracker.data.model.Account(
+                    id = 999999,
+                    name = "Test Account", 
+                    iconName = "test_icon",
+                    balance = 1234.56, // Test with decimal balance
+                    createdAt = System.currentTimeMillis()
+                )
                 
-                if (result.isSuccess) {
-                    _uiState.value = _uiState.value.copy(isLoading = false)
-                    showToast("✅ Encryption test successful!", ToastType.SUCCESS)
-                    Log.d("ExpenseTracker", "Encryption test successful: ${result.getOrNull()}")
+                Log.d("ExpenseTracker", "Original account: ${testAccount.name}, balance: ${testAccount.balance}")
+                
+                // Test encryption/decryption locally first
+                val encryptedData = encryptionManager.encryptAccount(testAccount)
+                val decryptedAccount = encryptionManager.decryptAccount(encryptedData)
+                
+                Log.d("ExpenseTracker", "Decrypted account: ${decryptedAccount.name}, balance: ${decryptedAccount.balance}")
+                
+                if (testAccount.balance == decryptedAccount.balance) {
+                    Log.d("ExpenseTracker", "Local encryption/decryption test PASSED")
+                    
+                    // Now test cloud round-trip
+                    val result = cloudSyncRepository.testEncryptionConsistency()
+                    
+                    if (result.isSuccess) {
+                        _uiState.value = _uiState.value.copy(isLoading = false)
+                        showToast("✅ Encryption test passed! Balance: ${testAccount.balance} → ${decryptedAccount.balance}", ToastType.SUCCESS)
+                        Log.d("ExpenseTracker", "Encryption test successful: ${result.getOrNull()}")
+                    } else {
+                        _uiState.value = _uiState.value.copy(isLoading = false)
+                        showToast("❌ Cloud encryption test failed: ${result.exceptionOrNull()?.message}", ToastType.ERROR)
+                    }
                 } else {
                     _uiState.value = _uiState.value.copy(isLoading = false)
-                    showToast("❌ Encryption test failed: ${result.exceptionOrNull()?.message}", ToastType.ERROR)
+                    showToast("❌ Local encryption test failed: ${testAccount.balance} ≠ ${decryptedAccount.balance}", ToastType.ERROR)
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(isLoading = false)
@@ -551,6 +581,11 @@ class AuthViewModel @Inject constructor(
             if (cloudAccounts.isSuccess) {
                 val accountsToAdd = cloudAccounts.getOrNull() ?: emptyList()
                 Log.d("ExpenseTracker", "Processing ${accountsToAdd.size} cloud accounts for restore")
+                
+                // Debug: Log account balances from cloud before merging
+                accountsToAdd.forEach { account ->
+                    Log.d("ExpenseTracker", "RESTORE - Cloud Account: ${account.name}, Balance: ${account.balance}")
+                }
                 
                 accountsToAdd.forEach { cloudAccount ->
                     // Check if account already exists locally (by name, since IDs might differ)
