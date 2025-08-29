@@ -24,8 +24,11 @@ import com.expensetracker.R
 import com.expensetracker.data.model.Transaction
 import com.expensetracker.data.model.TransactionType
 import com.expensetracker.ui.theme.expenseColor
+import com.expensetracker.ui.theme.expenseContainer
 import com.expensetracker.ui.theme.incomeColor
+import com.expensetracker.ui.theme.incomeContainer
 import com.expensetracker.ui.theme.transferColor
+import com.expensetracker.ui.theme.transferContainer
 import com.expensetracker.ui.viewmodel.AccountViewModel
 import com.expensetracker.ui.viewmodel.TransactionViewModel
 import java.text.NumberFormat
