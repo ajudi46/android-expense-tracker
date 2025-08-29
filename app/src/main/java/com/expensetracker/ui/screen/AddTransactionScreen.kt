@@ -32,38 +32,96 @@ fun AddTransactionScreen(
     transactionViewModel: TransactionViewModel = hiltViewModel(),
     accountViewModel: AccountViewModel = hiltViewModel()
 ) {
-    // STEP 6: Add account dropdown with ViewModel data
+    // Complete form state
     var amount by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf(TransactionType.EXPENSE) }
     var selectedCategory by remember { mutableStateOf("") }
-    var selectedAccount by remember { mutableStateOf<Account?>(null) }
+    var selectedFromAccount by remember { mutableStateOf<Account?>(null) }
+    var selectedToAccount by remember { mutableStateOf<Account?>(null) }
     
-    // Test ViewModel integration
+    // ViewModel integration
     val accounts by accountViewModel.accounts.collectAsStateWithLifecycle(initialValue = emptyList())
     
-    // Simple static categories for testing
-    val testCategories = listOf("Food", "Transport", "Shopping", "Bills", "Other")
+    // Enhanced categories with emojis
+    val expenseCategories = listOf(
+        "🍽️ Food & Dining", "🚗 Transportation", "🛍️ Shopping", "🎬 Entertainment", 
+        "💡 Bills & Utilities", "🏥 Healthcare", "🛒 Groceries", "📚 Education", 
+        "✈️ Travel", "📱 Subscriptions", "🛡️ Insurance", "⛽ Fuel", 
+        "🏡 Home & Garden", "🏃 Sports & Fitness", "💄 Beauty & Personal Care", 
+        "📱 Electronics", "👕 Clothing", "🐕 Pet Care", "🎁 Gifts & Donations", 
+        "💼 Business", "Other"
+    )
+    val incomeCategories = listOf(
+        "💰 Salary", "💼 Freelance", "📈 Investment Returns", "🏢 Business Income", 
+        "🏠 Rental Income", "🎉 Bonus", "🎁 Gift Received", "↩️ Refund", 
+        "💸 Interest Earned", "📊 Dividend", "💵 Side Hustle", "Other Income"
+    )
+    
+    val categories = when (selectedType) {
+        TransactionType.EXPENSE -> expenseCategories
+        TransactionType.INCOME -> incomeCategories
+        TransactionType.TRANSFER -> emptyList()
+    }
     
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(start = 16.dp, end = 16.dp, top = 56.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Header
         Text(
-            text = "Add Transaction - Step 7",
-            style = MaterialTheme.typography.headlineLarge
+            text = "Add Transaction",
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.onSurface
         )
         
-        Text(
-            text = "Testing: Complete Form + Save Transaction Logic",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
+        // Check if accounts exist
+        if (accounts.isEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AccountBalanceWallet,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No Accounts Found",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Text(
+                        text = "Please add at least one account before creating transactions",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = onNavigateBack,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Add Account")
+                    }
+                }
+            }
+            return@Column
+        }
         
         // STEP 1: Amount Input
         OutlinedTextField(
@@ -149,178 +207,121 @@ fun AddTransactionScreen(
             }
         }
         
-        // STEP 5: Simple dropdown test
-        var expandedCategory by remember { mutableStateOf(false) }
-        
-        ExposedDropdownMenuBox(
-            expanded = expandedCategory,
-            onExpandedChange = { expandedCategory = !expandedCategory }
-        ) {
-            OutlinedTextField(
-                value = selectedCategory,
-                onValueChange = { },
-                readOnly = true,
-                label = { Text("Category (Test)") },
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategory)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor()
-            )
+        // Category Selection (for non-transfers)
+        if (selectedType != TransactionType.TRANSFER && categories.isNotEmpty()) {
+            var expandedCategory by remember { mutableStateOf(false) }
             
-            ExposedDropdownMenu(
+            ExposedDropdownMenuBox(
                 expanded = expandedCategory,
-                onDismissRequest = { expandedCategory = false }
+                onExpandedChange = { expandedCategory = !expandedCategory }
             ) {
-                testCategories.forEach { category ->
-                    DropdownMenuItem(
-                        text = { Text(category) },
-                        onClick = {
-                            selectedCategory = category
-                            expandedCategory = false
-                        }
-                    )
-                }
-            }
-        }
-        
-        // STEP 6: Account dropdown with ViewModel data
-        var expandedAccount by remember { mutableStateOf(false) }
-        
-        ExposedDropdownMenuBox(
-            expanded = expandedAccount,
-            onExpandedChange = { expandedAccount = !expandedAccount }
-        ) {
-            OutlinedTextField(
-                value = selectedAccount?.name ?: "",
-                onValueChange = { },
-                readOnly = true,
-                label = { Text("Account (Dynamic Data)") },
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedAccount)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor()
-            )
-            
-            ExposedDropdownMenu(
-                expanded = expandedAccount,
-                onDismissRequest = { expandedAccount = false }
-            ) {
-                if (accounts.isEmpty()) {
-                    DropdownMenuItem(
-                        text = { Text("No accounts available") },
-                        onClick = { expandedAccount = false }
-                    )
-                } else {
-                    accounts.forEach { account ->
+                OutlinedTextField(
+                    value = selectedCategory,
+                    onValueChange = { },
+                    readOnly = true,
+                    label = { Text("Category") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCategory)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
+                )
+                
+                ExposedDropdownMenu(
+                    expanded = expandedCategory,
+                    onDismissRequest = { expandedCategory = false }
+                ) {
+                    categories.forEach { category ->
                         DropdownMenuItem(
-                            text = { Text(account.name) },
+                            text = { Text(category) },
                             onClick = {
-                                selectedAccount = account
-                                expandedAccount = false
+                                selectedCategory = category
+                                expandedCategory = false
                             }
                         )
                     }
                 }
             }
         }
+
+        // From Account Selection
+        var expandedFromAccount by remember { mutableStateOf(false) }
+        
+        ExposedDropdownMenuBox(
+            expanded = expandedFromAccount,
+            onExpandedChange = { expandedFromAccount = !expandedFromAccount }
+        ) {
+            OutlinedTextField(
+                value = selectedFromAccount?.name ?: "",
+                onValueChange = { },
+                readOnly = true,
+                label = { Text(if (selectedType == TransactionType.TRANSFER) "From Account" else "Account") },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedFromAccount)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+            
+            ExposedDropdownMenu(
+                expanded = expandedFromAccount,
+                onDismissRequest = { expandedFromAccount = false }
+            ) {
+                accounts.forEach { account ->
+                    DropdownMenuItem(
+                        text = { Text(account.name) },
+                        onClick = {
+                            selectedFromAccount = account
+                            expandedFromAccount = false
+                        }
+                    )
+                }
+            }
+        }
+
+        // To Account Selection (for transfers)
+        if (selectedType == TransactionType.TRANSFER) {
+            var expandedToAccount by remember { mutableStateOf(false) }
+            
+            ExposedDropdownMenuBox(
+                expanded = expandedToAccount,
+                onExpandedChange = { expandedToAccount = !expandedToAccount }
+            ) {
+                OutlinedTextField(
+                    value = selectedToAccount?.name ?: "",
+                    onValueChange = { },
+                    readOnly = true,
+                    label = { Text("To Account") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedToAccount)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
+                )
+                
+                ExposedDropdownMenu(
+                    expanded = expandedToAccount,
+                    onDismissRequest = { expandedToAccount = false }
+                ) {
+                    accounts.forEach { account ->
+                        if (account.id != selectedFromAccount?.id) {
+                            DropdownMenuItem(
+                                text = { Text(account.name) },
+                                onClick = {
+                                    selectedToAccount = account
+                                    expandedToAccount = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
         
         Spacer(modifier = Modifier.weight(1f))
-        
-        // STEP 4: Test ViewModel integration
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer
-            )
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "ViewModel Test:",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-                Text(
-                    text = "Accounts loaded: ${accounts.size}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
-                if (accounts.isNotEmpty()) {
-                    accounts.take(3).forEach { account ->
-                        Text(
-                            text = "• ${account.name}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                    if (accounts.size > 3) {
-                        Text(
-                            text = "... and ${accounts.size - 3} more",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                } else {
-                    Text(
-                        text = "No accounts found",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
-            }
-        }
-        
-        // Form state display
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Form State:",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Text(
-                    text = "Type: ${selectedType.name}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                if (selectedCategory.isNotEmpty()) {
-                    Text(
-                        text = "Category: $selectedCategory",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-                if (selectedAccount != null) {
-                    Text(
-                        text = "Account: ${selectedAccount?.name}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-                if (amount.isNotEmpty()) {
-                    Text(
-                        text = "Amount: $amount",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-                if (description.isNotEmpty()) {
-                    Text(
-                        text = "Description: $description",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            }
-        }
         
         // STEP 7: Save Transaction with full validation
         Row(
@@ -342,18 +343,26 @@ fun AddTransactionScreen(
             
             Button(
                 onClick = {
-                    // STEP 7: Test transaction creation logic
                     val amountValue = amount.toDoubleOrNull()
-                    if (amountValue != null && amountValue > 0 && selectedAccount != null) {
-                        val categoryToUse = if (selectedType == TransactionType.TRANSFER) "Transfer" else selectedCategory
+                    if (amountValue != null && amountValue > 0 && selectedFromAccount != null) {
+                        // Strip emoji from category for database storage
+                        val cleanCategory = if (selectedType == TransactionType.TRANSFER) {
+                            "Transfer"
+                        } else {
+                            if (selectedCategory.contains(" ")) {
+                                selectedCategory.substringAfter(" ")
+                            } else {
+                                selectedCategory
+                            }
+                        }
                         
                         transactionViewModel.addTransaction(
                             type = selectedType,
                             amount = amountValue,
                             description = description.ifBlank { "${selectedType.name} transaction" },
-                            category = categoryToUse,
-                            fromAccountId = selectedAccount!!.id,
-                            toAccountId = null, // For now, no to-account
+                            category = cleanCategory,
+                            fromAccountId = selectedFromAccount!!.id,
+                            toAccountId = selectedToAccount?.id,
                             date = System.currentTimeMillis()
                         )
                         onNavigateBack()
@@ -362,8 +371,9 @@ fun AddTransactionScreen(
                 modifier = Modifier.weight(1f),
                 enabled = amount.toDoubleOrNull() != null && 
                           amount.toDoubleOrNull() ?: 0.0 > 0 && 
-                          selectedAccount != null &&
-                          (selectedType == TransactionType.TRANSFER || selectedCategory.isNotBlank())
+                          selectedFromAccount != null &&
+                          (selectedType == TransactionType.TRANSFER || selectedCategory.isNotBlank()) &&
+                          (selectedType != TransactionType.TRANSFER || selectedToAccount != null)
             ) {
                 Icon(Icons.Default.Save, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
