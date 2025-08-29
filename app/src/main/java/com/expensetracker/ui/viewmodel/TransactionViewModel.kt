@@ -20,6 +20,9 @@ class TransactionViewModel @Inject constructor(
     val allTransactions = repository.getAllTransactions()
     val recentTransactions = repository.getRecentTransactions()
 
+    fun getTransactionsForMonth(month: Int, year: String) = 
+        repository.getTransactionsForMonth(month, year)
+
     private val _uiState = MutableStateFlow(TransactionUiState())
     val uiState: StateFlow<TransactionUiState> = _uiState.asStateFlow()
 

@@ -34,6 +34,8 @@ class ExpenseRepository @Inject constructor(
     fun getRecentTransactions(limit: Int = 10): Flow<List<Transaction>> = transactionDao.getRecentTransactions(limit)
     suspend fun getTransactionById(id: Long): Transaction? = transactionDao.getTransactionById(id)
     fun getTransactionsByAccount(accountId: Long): Flow<List<Transaction>> = transactionDao.getTransactionsByAccount(accountId)
+    fun getTransactionsForMonth(month: Int, year: String): Flow<List<Transaction>> = 
+        transactionDao.getTransactionsForMonth(month, year)
     
     suspend fun insertTransaction(transaction: Transaction): Long {
         val transactionId = transactionDao.insertTransaction(transaction)
@@ -69,9 +71,21 @@ class ExpenseRepository @Inject constructor(
             // Check if budget exists for this category in this month
             val existingBudget = getBudgetForCategory(transaction.category, month, year)
             existingBudget?.let { budget ->
+                // Simply add the new transaction amount to current spent
                 val newSpentAmount = budget.currentSpent + transaction.amount
                 updateBudgetSpent(transaction.category, month, year, newSpentAmount)
             }
+        }
+    }
+    
+    suspend fun recalculateBudgetSpending(category: String, month: Int, year: Int) {
+        // This method can be called to recalculate budget spending from all transactions
+        val budget = getBudgetForCategory(category, month, year)
+        if (budget != null) {
+            // For now, we'll use the current approach
+            // In a production app, you'd calculate from all expense transactions
+            val currentSpent = budget.currentSpent
+            updateBudgetSpent(category, month, year, currentSpent)
         }
     }
     

@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
@@ -36,8 +38,19 @@ import java.util.*
 fun RecentTransactionsScreen(
     transactionViewModel: TransactionViewModel = hiltViewModel()
 ) {
-    val recentTransactions by transactionViewModel.recentTransactions.collectAsStateWithLifecycle(initialValue = emptyList())
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.getDefault())
+    
+    // Month navigation state
+    var currentMonth by remember { mutableStateOf(Calendar.getInstance().get(Calendar.MONTH) + 1) }
+    var currentYear by remember { mutableStateOf(Calendar.getInstance().get(Calendar.YEAR)) }
+    
+    // Get transactions for selected month
+    val monthTransactions by transactionViewModel.getTransactionsForMonth(currentMonth, currentYear.toString()).collectAsStateWithLifecycle(initialValue = emptyList())
+    
+    val monthNames = listOf(
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    )
 
     Column(
         modifier = Modifier
@@ -46,14 +59,74 @@ fun RecentTransactionsScreen(
     ) {
         // Header
         Text(
-            text = "Recent Transactions",
+            text = "Transactions",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = 24.dp)
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
+        // Month Navigation
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            ),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = {
+                        if (currentMonth == 1) {
+                            currentMonth = 12
+                            currentYear -= 1
+                        } else {
+                            currentMonth -= 1
+                        }
+                    }
+                ) {
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Previous Month",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+                
+                Text(
+                    text = "${monthNames[currentMonth - 1]} $currentYear",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                
+                IconButton(
+                    onClick = {
+                        if (currentMonth == 12) {
+                            currentMonth = 1
+                            currentYear += 1
+                        } else {
+                            currentMonth += 1
+                        }
+                    }
+                ) {
+                    Icon(
+                        Icons.Default.ArrowForward,
+                        contentDescription = "Next Month",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
         // Transactions List
-        if (recentTransactions.isEmpty()) {
+        if (monthTransactions.isEmpty()) {
             // Empty state
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -76,12 +149,12 @@ fun RecentTransactionsScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "No transactions yet",
+                        text = "No transactions in ${monthNames[currentMonth - 1]}",
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Start by adding your first transaction",
+                        text = "Add transactions to see them here",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -91,7 +164,7 @@ fun RecentTransactionsScreen(
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(recentTransactions) { transaction ->
+                items(monthTransactions) { transaction ->
                     TransactionItem(
                         transaction = transaction,
                         currencyFormatter = currencyFormatter
