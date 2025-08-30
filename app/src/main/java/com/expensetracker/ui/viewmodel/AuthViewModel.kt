@@ -617,8 +617,18 @@ class AuthViewModel @Inject constructor(
                     }
                     
                     if (!existsLocally) {
-                        // Map account IDs (cloud account IDs might be different than local)
-                        val mappedTransaction = mapCloudTransactionToLocal(cloudTransaction)
+                        // Try to get transaction with account mapping first
+                        val transactionWithMapping = cloudSyncRepository.getTransactionWithAccountMapping(cloudTransaction.id.toString())
+                        
+                        val mappedTransaction = if (transactionWithMapping != null) {
+                            // Use account mapping information for precise matching
+                            mapCloudTransactionWithMapping(transactionWithMapping)
+                        } else {
+                            // Fallback to legacy mapping
+                            Log.d("ExpenseTracker", "No account mapping found for ${cloudTransaction.description}, using legacy mapping")
+                            mapCloudTransactionToLocal(cloudTransaction)
+                        }
+                        
                         if (mappedTransaction != null) {
                             // Insert transaction but don't apply balance changes yet (will be done in recalculateAllBalances)
                             val newTransactionId = expenseRepository.insertTransactionWithoutBalanceUpdate(mappedTransaction.copy(id = 0))
@@ -701,6 +711,62 @@ class AuthViewModel @Inject constructor(
             )
         } catch (e: Exception) {
             Log.e("ExpenseTracker", "Error mapping cloud transaction: ${e.message}")
+            return null
+        }
+    }
+    
+    private suspend fun mapCloudTransactionWithMapping(transactionWithMapping: com.expensetracker.security.TransactionWithAccountMapping): Transaction? {
+        try {
+            val localAccounts = expenseRepository.getAllAccounts().firstOrNull() ?: emptyList()
+            
+            if (localAccounts.isEmpty()) {
+                Log.w("ExpenseTracker", "No local accounts available for mapping")
+                return null
+            }
+            
+            val transaction = transactionWithMapping.transaction
+            val fromMapping = transactionWithMapping.fromAccountMapping
+            val toMapping = transactionWithMapping.toAccountMapping
+            
+            // Find local account that matches the mapping
+            val fromAccount = if (fromMapping != null) {
+                localAccounts.find { 
+                    it.name == fromMapping.name && 
+                    it.initialBalance == fromMapping.initialBalance &&
+                    it.iconName == fromMapping.iconName
+                }
+            } else {
+                // Fallback to ID matching
+                localAccounts.find { it.id == transaction.fromAccountId }
+            }
+            
+            val toAccount = if (toMapping != null && transaction.toAccountId != null) {
+                localAccounts.find { 
+                    it.name == toMapping.name && 
+                    it.initialBalance == toMapping.initialBalance &&
+                    it.iconName == toMapping.iconName
+                }
+            } else if (transaction.toAccountId != null) {
+                // Fallback to ID matching
+                localAccounts.find { it.id == transaction.toAccountId }
+            } else {
+                null
+            }
+            
+            if (fromAccount == null) {
+                Log.w("ExpenseTracker", "Could not find matching local account for transaction ${transaction.description}. Looking for: ${fromMapping?.name}")
+                return null
+            }
+            
+            Log.d("ExpenseTracker", "Mapped transaction with account mapping: ${transaction.description} from ${fromMapping?.name} → ${fromAccount.name}")
+            
+            return transaction.copy(
+                id = 0, // Let database assign new ID
+                fromAccountId = fromAccount.id,
+                toAccountId = toAccount?.id
+            )
+        } catch (e: Exception) {
+            Log.e("ExpenseTracker", "Error mapping transaction with account mapping: ${e.message}")
             return null
         }
     }

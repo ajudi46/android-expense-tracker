@@ -125,7 +125,43 @@ class EncryptionManager @Inject constructor(
         return account
     }
     
-    // Transaction encryption/decryption
+    // Transaction encryption/decryption with account mapping
+    suspend fun encryptTransactionWithAccountMapping(
+        transaction: Transaction, 
+        fromAccount: com.expensetracker.data.model.Account,
+        toAccount: com.expensetracker.data.model.Account? = null
+    ): Map<String, Any> {
+        // Create transaction data with account mapping information
+        val transactionWithMapping = mapOf(
+            "transaction" to transaction,
+            "fromAccountMapping" to mapOf(
+                "name" to fromAccount.name,
+                "initialBalance" to fromAccount.initialBalance,
+                "iconName" to fromAccount.iconName,
+                "originalId" to fromAccount.id
+            ),
+            "toAccountMapping" to if (toAccount != null) mapOf(
+                "name" to toAccount.name,
+                "initialBalance" to toAccount.initialBalance,
+                "iconName" to toAccount.iconName,
+                "originalId" to toAccount.id
+            ) else null
+        )
+        
+        val jsonString = gson.toJson(transactionWithMapping)
+        android.util.Log.d("EncryptionManager", "Encrypting transaction with account mapping: ${transaction.description}")
+        android.util.Log.d("EncryptionManager", "From account: ${fromAccount.name}, To account: ${toAccount?.name}")
+        val encryptedString = encrypt(jsonString)
+        
+        return mapOf(
+            "id" to transaction.id,
+            "encryptedData" to encryptedString,
+            "createdAt" to transaction.createdAt, // Keep timestamp unencrypted for querying
+            "timestamp" to System.currentTimeMillis()
+        )
+    }
+    
+    // Legacy method for backward compatibility
     fun encryptTransaction(transaction: Transaction): Map<String, Any> {
         val jsonString = gson.toJson(transaction)
         val encryptedString = encrypt(jsonString)
@@ -142,6 +178,45 @@ class EncryptionManager @Inject constructor(
         val encryptedData = data["encryptedData"] as String
         val decryptedString = decrypt(encryptedData)
         return gson.fromJson(decryptedString, Transaction::class.java)
+    }
+    
+    // Decrypt transaction with account mapping information
+    fun decryptTransactionWithAccountMapping(data: Map<String, Any>): TransactionWithAccountMapping? {
+        return try {
+            val encryptedData = data["encryptedData"] as String
+            val decryptedString = decrypt(encryptedData)
+            
+            // Try to parse as new format with account mapping
+            val mappingData = gson.fromJson(decryptedString, Map::class.java) as? Map<String, Any>
+            
+            if (mappingData != null && mappingData.containsKey("transaction") && mappingData.containsKey("fromAccountMapping")) {
+                // New format with account mapping
+                val transaction = gson.fromJson(gson.toJson(mappingData["transaction"]), Transaction::class.java)
+                val fromAccountMapping = mappingData["fromAccountMapping"] as? Map<String, Any>
+                val toAccountMapping = mappingData["toAccountMapping"] as? Map<String, Any>
+                
+                android.util.Log.d("EncryptionManager", "Decrypted transaction with mapping: ${transaction.description}")
+                android.util.Log.d("EncryptionManager", "From account mapping: ${fromAccountMapping?.get("name")}")
+                
+                TransactionWithAccountMapping(
+                    transaction = transaction,
+                    fromAccountMapping = fromAccountMapping?.let { AccountMapping.fromMap(it) },
+                    toAccountMapping = toAccountMapping?.let { AccountMapping.fromMap(it) }
+                )
+            } else {
+                // Legacy format - just transaction data
+                val transaction = gson.fromJson(decryptedString, Transaction::class.java)
+                android.util.Log.d("EncryptionManager", "Decrypted legacy transaction: ${transaction.description}")
+                TransactionWithAccountMapping(
+                    transaction = transaction,
+                    fromAccountMapping = null,
+                    toAccountMapping = null
+                )
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("EncryptionManager", "Failed to decrypt transaction with mapping: ${e.message}")
+            null
+        }
     }
     
     // Category encryption/decryption
@@ -191,5 +266,30 @@ class EncryptionManager @Inject constructor(
         clearEncryptionKey()
         getOrCreateEncryptionKey() // This will regenerate the key
         android.util.Log.d("EncryptionManager", "Encryption key refreshed")
+    }
+}
+
+// Data classes for account mapping
+data class TransactionWithAccountMapping(
+    val transaction: Transaction,
+    val fromAccountMapping: AccountMapping?,
+    val toAccountMapping: AccountMapping?
+)
+
+data class AccountMapping(
+    val name: String,
+    val initialBalance: Double,
+    val iconName: String,
+    val originalId: Long
+) {
+    companion object {
+        fun fromMap(map: Map<String, Any>): AccountMapping {
+            return AccountMapping(
+                name = map["name"] as String,
+                initialBalance = (map["initialBalance"] as? Number)?.toDouble() ?: 0.0,
+                iconName = map["iconName"] as String,
+                originalId = (map["originalId"] as? Number)?.toLong() ?: 0L
+            )
+        }
     }
 }

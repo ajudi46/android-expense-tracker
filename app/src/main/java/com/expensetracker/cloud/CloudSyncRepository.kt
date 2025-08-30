@@ -132,6 +132,11 @@ class CloudSyncRepository @Inject constructor(
 
             android.util.Log.d("CloudSync", "Uploading ${newTransactions.size} new transactions (${transactions.size - newTransactions.size} already existed)")
 
+            // Get all accounts for account mapping
+            val accountsResult = syncAccountsFromCloud()
+            val allAccounts = accountsResult.getOrNull() ?: emptyList()
+            android.util.Log.d("CloudSync", "Retrieved ${allAccounts.size} accounts for transaction mapping")
+
             // For large datasets, split into batches (Firestore batch limit is 500 operations)
             val batchSize = 450 // Leave some margin
             val totalBatches = (newTransactions.size + batchSize - 1) / batchSize
@@ -143,7 +148,22 @@ class CloudSyncRepository @Inject constructor(
 
                 for (j in startIndex until endIndex) {
                     val transaction = newTransactions[j]
-                    val encryptedTransaction = encryptionManager.encryptTransaction(transaction)
+                    
+                    // Find the accounts for this transaction to include mapping
+                    val fromAccount = allAccounts.find { it.id == transaction.fromAccountId }
+                    val toAccount = if (transaction.toAccountId != null) {
+                        allAccounts.find { it.id == transaction.toAccountId }
+                    } else null
+                    
+                    val encryptedTransaction = if (fromAccount != null) {
+                        // Use new method with account mapping
+                        encryptionManager.encryptTransactionWithAccountMapping(transaction, fromAccount, toAccount)
+                    } else {
+                        // Fallback to legacy method
+                        android.util.Log.w("CloudSync", "Could not find account for transaction ${transaction.description}, using legacy encryption")
+                        encryptionManager.encryptTransaction(transaction)
+                    }
+                    
                     val docRef = firestore.collection(userCollection).document(transaction.id.toString())
                     batch.set(docRef, encryptedTransaction)
                 }
@@ -191,6 +211,28 @@ class CloudSyncRepository @Inject constructor(
         } catch (e: Exception) {
             android.util.Log.e("CloudSync", "Failed to sync transactions from cloud: ${e.message}")
             Result.failure(e)
+        }
+    }
+    
+    // Get transaction with account mapping information
+    suspend fun getTransactionWithAccountMapping(transactionId: String): com.expensetracker.security.TransactionWithAccountMapping? {
+        return try {
+            val userCollection = getUserCollection("transactions") ?: return null
+            
+            val document = firestore.collection(userCollection)
+                .document(transactionId)
+                .get()
+                .await()
+            
+            if (document.exists()) {
+                val data = document.data ?: return null
+                encryptionManager.decryptTransactionWithAccountMapping(data)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("CloudSync", "Failed to get transaction with mapping: ${e.message}")
+            null
         }
     }
     
